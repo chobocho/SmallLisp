@@ -1,0 +1,63 @@
+﻿
+<HTML>
+<head>
+<title>Chobocho Calc</title>
+
+<script language="JavaScript" src="lisp.js"></script> 
+
+<script language="JavaScript">
+function Run(form) { 
+	form.result_view.value = main(form.source_view.value); 
+}
+
+function ClearForm(form) { 
+	form.result_view.value = "";
+    form.source_view.value = "";    
+}
+
+
+</script>
+</head>
+<body>
+
+<!------------------------------------------------------------------
+// 입력양식
+------------------------------------------------------------------->
+<FORM name=source_code>
+    <TABLE cellSpacing=0 borderColorDark=white align=center borderColorLight=black border=1>
+        <TR>
+            <TD align="center">
+            [ Lisp source ]
+            </TD>
+            <TD align="center">
+            [ 결과 (Result) ]
+            </TD>    
+        </TR>
+        <TR>
+            <TD width=160 height=40>
+                <SPAN style="FONT-SIZE: 9pt"><TextArea name="source_view" cols="50" rows="20"></textArea> </SPAN>
+            </TD>
+            <TD width=80 height=40>
+                <SPAN style="FONT-SIZE: 9pt"><TextArea name="result_view" cols="20" rows="20"></textArea> </SPAN>
+            </TD>
+        </TR>
+        <TR>
+            <TD align="center" width=246 colSpan=2 height=25>
+                <SPAN style="FONT-SIZE: 9pt"><INPUT type="button" value="Run", onClick="Run(this.form)"> </SPAN>
+                <SPAN style="FONT-SIZE: 9pt"><INPUT type="button" value="Clear", onClick="ClearForm(this.form)"> </SPAN>
+            </TD>
+        </TR>
+        <TR>
+            <TD width=240 colSpan=2>
+                Example<br>
+                (+ 1  2  3)<br>
+            </TD>
+        </TR>        
+        <TR>
+
+        </TR> 
+    </TABLE>
+ </FORM>
+ 
+</body> 
+</HTML>
