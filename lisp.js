@@ -17,28 +17,6 @@ var TRACE_PRINT = true;   // Trace Mode Option
  
  
 // Type of Token
-var TOKEN_NONE        = 0;
-var TOKEN_PLUS        = 1; // +
-var TOKEN_MINUS       = 2; // -
-var TOKEN_MULTI       = 3; // *
-var TOKEN_VARIABLE    = 4; // @[a-zA-Z0-9]*
-var TOKEN_NUMBER      = 5; // [0-9]+
-var TOKEN_ASSIGN      = 6; //  =
-var TOKEN_COMMENT     = 7; //  //
-var TOKEN_LBRACE      = 8; //  {
-var TOKEN_RBRACE      = 9; //  }
-                      
-var TOKEN_DELIMITER   = 10; 
-var TOKEN_UNKNOWN     = 11;
-var TOKEN_EOL         = 12; //  ; end of line
-var TOKEN_LPAREN      = 23; //  (
-var TOKEN_RPAREN      = 24; //  )
-var TOKEN_DIVIDE      = 15; //  /
-var TOKEN_MOD         = 16; //  %
-                      
-var TOKEN_PRINT       = 17;
-var TOKEN_EOE         = 18;
-                      
 var TOKEN_COMMENT_KW  = '#';
 var TOKEN_EOL_KW      = ';';
 var TOKEN_DEVIDE_KW   = '/';
@@ -65,15 +43,10 @@ var DIVIDE_BY_ZERO    = 103;
  
 
 // Type of End
-var EOE               = "\0"; 
 var ErrorMessage      = "";
 var IsOccuredError    = false;
 
 var source_code       = "";
-var source_idx        = 0;
-var gToken            = "";
-var tokenType         = 0;
-var stack;
 var dict              = [];            
 
 /*-----------------------------------------------*
@@ -82,21 +55,18 @@ var dict              = [];
 function main(args) {
 
     var Result = "";
-     
-    TRACE(typeof(dict));
-     
+    
     //Tokenize
     source_code = args.replace(/\(/g, " ( ").replace(/\)/g, " ) ").trim().split(/\s+/);
-    TRACE(source_code);
     tokens = [];
     
     do {
         read_from_tokens(source_code, tokens);
         TRACE(tokens);
         var token = tokens.shift();
-        TRACE ("Start :");
+        TRACE ("REP:");
         TRACE (token);
-           var temp = lispEval(token); 
+        var temp = lispEval(token); 
         Result += temp + ((temp === "") ? "" : "\n");
         TRACE ("ANSWER :");
         TRACE (source_code);
@@ -107,6 +77,7 @@ function main(args) {
     {
         Result = ErrorMessage;
     } 
+     
     return Result;
 }
 
@@ -185,8 +156,38 @@ function lispEval(token) {
             ans = parseInt(ans);
             TRACE ("lispEval / " +ans);
             return ans;
-        break;                
-        
+        break;   
+
+        case TOKEN_EQ:
+		case TOKEN_GT:
+		case TOKEN_GL:
+		case TOKEN_GE:
+		case TOKEN_LE:
+		{
+		    var opToken = token[0];
+            TRACE ("lispEval : <>=" + token[0]);
+            token.shift();
+            var leftToken  = lispEval(token.shift());
+            var rightToken = lispEval(token.shift());
+			if ( opToken === TOKEN_EQ ) {
+                return (leftToken === rightToken);
+			}
+            else if (opToken === TOKEN_GT) {
+			    return (leftToken > rightToken);
+			}
+            else if (opToken === TOKEN_GL) {
+			    return (leftToken < rightToken);
+			}
+            else if (opToken === TOKEN_GE) {
+			    return (leftToken >= rightToken);
+			}
+            else if (opToken === TOKEN_LE) {
+			    return (leftToken <= rightToken);
+			}
+			TRACE ("Error : Never come to here!")
+        }
+		break;
+			
         case "define":
             TRACE ("lispEval : DEFINE");
             token.shift();
@@ -204,8 +205,18 @@ function lispEval(token) {
 
             break;
         
-        default:
-            var ans = token;
+		case "if":
+		    TRACE("lispEval : if");
+			token.shift();
+			var bCondToken = lispEval(token.shift());
+			var stConseqToken = token.shift();
+			var stAlterToken = token.shift();
+		 	var ans;
+		    ans = (bCondToken) ? stConseqToken : stAlterToken; 
+		    TRACE (ans); 
+		    return lispEval(ans);
+			break;
+			
             TRACE (ans);
             return ans;
             break;
@@ -223,34 +234,27 @@ function read_from_tokens(input, output) {
                     
     switch(token) {
         case undefined:
-             output.pop();
-             TRACE("input is null");
-             break;
+            output.pop();
+            TRACE("input is null");
+            break;
 
         case TOKEN_LPAREN_SZ:
-                 var list = [];
-             while (input[0] != TOKEN_RPAREN_SZ) {
-                        read_from_tokens(input, list);
-                 }
-                 input.shift(); // Remove ')'
-                 output.push(list);
-             break;
+            var list = [];
+            while (input[0] != TOKEN_RPAREN_SZ) {
+                       read_from_tokens(input, list);
+                }
+                input.shift(); // Remove ')'
+                output.push(list);
+            break;
                         
         case TOKEN_RPAREN_SZ:
-                onError("Error : Start with ')'!");
+            onError("Error : Start with ')'!");
             break;
                 
         default:
-            var bIsDigit = true;
-            for (var i = 0; i < token.length; i++) {
-                if ( isDigit ( token.charAt(i) ) == false) {
-                    bIsDigit = false;
-                    break;
-                } 
-            }
-            if (bIsDigit) { 
+            if ( isDigit(token.charAt(0))) {
                 TRACE ("Digit " + token);
-             output.push(parseInt(token));
+                output.push(parseInt(token));
             } else {
                 output.push(token);
             }
