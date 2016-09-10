@@ -6,8 +6,9 @@
  *
  */
 
- // 2016. 9. 2 : Add code to support simple lisp 
- // 2016. 9. 3 : Add code to support divide  
+ // 2016. 9. 2  : Add code to support simple lisp 
+ // 2016. 9. 3  : Add code to support divide  
+ // 2016. 9. 10 : Add code to support if
  
 /*-----------------------------------------------*
  *  Global variables
@@ -17,21 +18,19 @@ var TRACE_PRINT = true;   // Trace Mode Option
  
  
 // Type of Token
-var TOKEN_COMMENT_KW  = '#';
-var TOKEN_EOL_KW      = ';';
-var TOKEN_DEVIDE_KW   = '/';
-var TOKEN_PLUS_KW     = '+';
-var TOKEN_MINUS_KW    = '-';
-var TOKEN_MULTI_KW    = '*';
-var TOKEN_LBRACE_KW   = '{';
-var TOKEN_RBRACE_KW   = '}';
-var TOKEN_LPAREN_SZ   = '(';
-var TOKEN_RPAREN_SZ   = ')';
-var TOKEN_EQ          = '=';
-var TOKEN_GT          = '>';
-var TOKEN_GL          = '<';
-var TOKEN_GE          = '>=';
-var TOKEN_LE          = '<=';
+var TOKEN_DIVIDE   = '/';
+var TOKEN_PLUS     = '+';
+var TOKEN_MINUS    = '-';
+var TOKEN_MULTI    = '*';
+var TOKEN_LBRACE   = '{';
+var TOKEN_RBRACE   = '}';
+var TOKEN_LPAREN   = '(';
+var TOKEN_RPAREN   = ')';
+var TOKEN_EQ       = '=';
+var TOKEN_GT       = '>';
+var TOKEN_GL       = '<';
+var TOKEN_GE       = '>=';
+var TOKEN_LE       = '<=';
 
 
 
@@ -88,7 +87,8 @@ function makeTable(dic){
 
 function lispEval(token) {
     TRACE ("lispEval > " + token + " " + typeof(token));
-
+    var ans = ""; 
+    
     if (typeof(token) === "string") {
         return dict[token];
     }
@@ -96,103 +96,61 @@ function lispEval(token) {
     else if (typeof(token) !== "object") {
         return token;
     }
-
+    
     switch(token[0]) {
-        case TOKEN_PLUS_KW:
-            TRACE ("lispEval : " + TOKEN_PLUS_KW);
+        case TOKEN_PLUS:
+        case TOKEN_MINUS:
+        case TOKEN_MULTI:
+        case TOKEN_DIVIDE:
+            var opToken = token[0];
+            TRACE ("lispTOKEN_MULTI Eval : " + opToken);
             token.shift();
-                var ans = parseInt(lispEval(token.shift()));
-                var nextToken = token.shift();
-                do {                              
-                    ans += lispEval(nextToken); 
-                    nextToken = token.shift();
-                    TRACE ("NextToken " + nextToken);
-                } while (nextToken != undefined);
-                TRACE ("lispEval + " + ans);
-                return ans;
-        break;
-        
-        case TOKEN_MINUS_KW:
-            TRACE ("lispEval : " + TOKEN_MINUS_KW);
-            token.shift();
-                var nextToken;
-                var ans = parseInt(lispEval(token.shift()));
-                nextToken = token.shift();
-                do {        
-                    ans -= lispEval(nextToken);
-                    nextToken = token.shift();
-                    TRACE ("NextToken " + nextToken);
-                } while (nextToken != undefined);
-                TRACE ("lispEval - " + ans);
-                return ans;
-        break;        
-        
-        case TOKEN_MULTI_KW:
-            TRACE ("lispEval : "+TOKEN_MULTI_KW);
-                token.shift();
-                var nextToken;
-                var ans = parseInt(lispEval(token.shift()));
-                nextToken = token.shift();
-                do {        
-                    ans *= lispEval(nextToken);
-                    nextToken = token.shift();
-                    TRACE ("NextToken " + nextToken);
-                } while (nextToken != undefined);
-                TRACE ("lispEval * " +ans);
-                return ans;
-        break;
-        
-        case TOKEN_DEVIDE_KW:
-            TRACE ("lispEval : " + TOKEN_DEVIDE_KW);
-            token.shift();
-            var nextToken;
-            var ans = parseInt(lispEval(token.shift()));
-            nextToken = token.shift();
-            do {        
-                ans /= lispEval(nextToken);
+            ans = lispEval(token.shift());
+            var nextToken = lispEval(token.shift());
+            do {
+                ans = doOperation(opToken, ans, lispEval(nextToken) );  
                 nextToken = token.shift();
                 TRACE ("NextToken " + nextToken);
             } while (nextToken != undefined);
-            ans = parseInt(ans);
-            TRACE ("lispEval / " +ans);
-            return ans;
-        break;   
+            TRACE ("lispEval + " + ans);
+        break;
 
         case TOKEN_EQ:
-		case TOKEN_GT:
-		case TOKEN_GL:
-		case TOKEN_GE:
-		case TOKEN_LE:
-		{
-		    var opToken = token[0];
+        case TOKEN_GT:
+        case TOKEN_GL:
+        case TOKEN_GE:
+        case TOKEN_LE:
+        {
+            var opToken = token[0];
             TRACE ("lispEval : <>=" + token[0]);
             token.shift();
             var leftToken  = lispEval(token.shift());
             var rightToken = lispEval(token.shift());
-			if ( opToken === TOKEN_EQ ) {
+            if ( opToken === TOKEN_EQ ) {
                 return (leftToken === rightToken);
-			}
+            }
             else if (opToken === TOKEN_GT) {
-			    return (leftToken > rightToken);
-			}
+                return (leftToken > rightToken);
+            }
             else if (opToken === TOKEN_GL) {
-			    return (leftToken < rightToken);
-			}
+                return (leftToken < rightToken);
+            }
             else if (opToken === TOKEN_GE) {
-			    return (leftToken >= rightToken);
-			}
+                return (leftToken >= rightToken);
+            }
             else if (opToken === TOKEN_LE) {
-			    return (leftToken <= rightToken);
-			}
-			TRACE ("Error : Never come to here!")
+                return (leftToken <= rightToken);
+            }
+            TRACE ("Error : Never come to here!")
         }
-		break;
-			
+        break;
+            
         case "define":
             TRACE ("lispEval : DEFINE");
             token.shift();
             var nextToken = token.shift();
             dict[nextToken] = token.shift();
+            ans = "";
             break;
             
         case "lambda":
@@ -201,30 +159,51 @@ function lispEval(token) {
             var funcParam = token.shift();
             var funcBody  = token.shift();
             UpdateDict(funcParam)
-            return lispEval(funcBody);
-
+            ans = lispEval(funcBody);
             break;
         
-		case "if":
-		    TRACE("lispEval : if");
-			token.shift();
-			var bCondToken = lispEval(token.shift());
-			var stConseqToken = token.shift();
-			var stAlterToken = token.shift();
-		 	var ans;
-		    ans = (bCondToken) ? stConseqToken : stAlterToken; 
-		    TRACE (ans); 
-		    return lispEval(ans);
-			break;
-			
+        case "if":
+            TRACE("lispEval : if");
+            token.shift();
+            var bCondToken = lispEval(token.shift());
+            var stConseqToken = token.shift();
+            var stAlterToken = token.shift();
+            var ans;
+            ans = (bCondToken) ? stConseqToken : stAlterToken; 
+            TRACE (ans); 
+            ans = lispEval(ans);
+            break;
+            
+        default:
+            ans = token;
             TRACE (ans);
-            return ans;
             break;
     }
 
-    return "";        
+    return ans;        
 }
 
+
+function doOperation(op, left, right) {
+    switch(op) {
+        case TOKEN_PLUS:
+             left += right;
+        break;
+        case TOKEN_MINUS:
+             left -= right;
+        break;
+        case TOKEN_MULTI:
+             left *= right;
+        break;
+        case TOKEN_DIVIDE:
+             left /= right;
+        break;
+        default:
+             TRACE ("doOperation : ERROR");
+        break;
+    }
+    return left;
+}
 
 function read_from_tokens(input, output) {
     TRACE ("read_from_tokens");
@@ -238,16 +217,16 @@ function read_from_tokens(input, output) {
             TRACE("input is null");
             break;
 
-        case TOKEN_LPAREN_SZ:
+        case TOKEN_LPAREN:
             var list = [];
-            while (input[0] != TOKEN_RPAREN_SZ) {
+            while (input[0] != TOKEN_RPAREN) {
                        read_from_tokens(input, list);
                 }
                 input.shift(); // Remove ')'
                 output.push(list);
             break;
                         
-        case TOKEN_RPAREN_SZ:
+        case TOKEN_RPAREN:
             onError("Error : Start with ')'!");
             break;
                 
@@ -267,14 +246,6 @@ function onError(msg){
     ErrorMessage = msg;
     TRACE(msg);
 }
-
-function isDelimiter ( ch )
-{
-    if ("+-/*=(){}@;".indexOf(ch) != -1)
-        return true;
-    return false;
-}
-
 
 function isDigit ( ch )
 {
