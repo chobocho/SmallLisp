@@ -65,7 +65,7 @@ function main(args) {
         var token = tokens.shift();
         TRACE ("REP:");
         TRACE (token);
-        var temp = lispEval(token); 
+        var temp = lispEval(token, dict); 
         Result += temp + ((temp === "") ? "" : "\n");
         TRACE ("ANSWER :");
         TRACE (source_code);
@@ -85,7 +85,7 @@ function makeTable(dic){
 
 }
 
-function lispEval(token) {
+function lispEval(token, dict) {
     TRACE ("lispEval > " + token + " " + typeof(token));
     var ans = ""; 
     
@@ -105,10 +105,10 @@ function lispEval(token) {
             var opToken = token[0];
             TRACE ("lispTOKEN_MULTI Eval : " + opToken);
             token.shift();
-            ans = lispEval(token.shift());
-            var nextToken = lispEval(token.shift());
+            ans = lispEval(token.shift(), dict);
+            var nextToken = lispEval(token.shift(), dict);
             do {
-                ans = doOperation(opToken, ans, lispEval(nextToken) );  
+                ans = doOperation(opToken, ans, lispEval(nextToken, dict) );  
                 nextToken = token.shift();
                 TRACE ("NextToken " + nextToken);
             } while (nextToken != undefined);
@@ -124,8 +124,8 @@ function lispEval(token) {
             var opToken = token[0];
             TRACE ("lispEval : <>=" + token[0]);
             token.shift();
-            var leftToken  = lispEval(token.shift());
-            var rightToken = lispEval(token.shift());
+            var leftToken  = lispEval(token.shift(), dict);
+            var rightToken = lispEval(token.shift(), dict);
             if ( opToken === TOKEN_EQ ) {
                 return (leftToken === rightToken);
             }
@@ -146,6 +146,7 @@ function lispEval(token) {
         break;
             
         case "define":
+		case "set!":
             TRACE ("lispEval : DEFINE");
             token.shift();
             var nextToken = token.shift();
@@ -158,20 +159,23 @@ function lispEval(token) {
             token.shift();
             var funcParam = token.shift();
             var funcBody  = token.shift();
-            UpdateDict(funcParam)
-            ans = lispEval(funcBody);
+            // 파라미터를 리스트에 추가하기 
+			// 단 파라미터 리스트가 복구 되어야 함
+			//  dict = UpdateDict(funcParam);
+            ans = doLambda(funcParam, funcBody, dict);
+			// 끝나면 파라미터 리스트가 복구 되어야함
             break;
         
         case "if":
             TRACE("lispEval : if");
             token.shift();
-            var bCondToken = lispEval(token.shift());
+            var bCondToken = lispEval(token.shift(), dict);
             var stConseqToken = token.shift();
             var stAlterToken = token.shift();
             var ans;
             ans = (bCondToken) ? stConseqToken : stAlterToken; 
             TRACE (ans); 
-            ans = lispEval(ans);
+            ans = lispEval(ans, dict);
             break;
             
         default:
