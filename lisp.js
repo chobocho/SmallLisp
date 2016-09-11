@@ -54,7 +54,6 @@ var dict              = [];
 function main(args) {
 
     var Result = "";
-    
     //Tokenize
     source_code = args.replace(/\(/g, " ( ").replace(/\)/g, " ) ").trim().split(/\s+/);
     tokens = [];
@@ -81,19 +80,21 @@ function main(args) {
 }
 
 
-function makeTable(dic){
-
+function makeDictTable(dict, funcParam, args){
+    TRACE ("makeDictTable");
+    return dict;
 }
 
 function lispEval(token, dict) {
-    TRACE ("lispEval > " + token + " " + typeof(token));
+    TRACE ("lispEval > > " + token + " " + typeof(token));
     var ans = ""; 
     
     if (typeof(token) === "string") {
+		TRACE ("String " + dict[token]);
         return dict[token];
     }
 
-    else if (typeof(token) !== "object") {
+    else if (token instanceof Array === false) {
         return token;
     }
     
@@ -179,8 +180,29 @@ function lispEval(token, dict) {
             break;
             
         default:
-            ans = token;
-            TRACE (ans);
+            TRACE ("Default");
+            if ( typeof(token[0]) === "string") {
+				var funcToken = dict[token[0]];
+				token.shift();
+				var args = new Array();
+				for( var i = 0; i < token.length; i++) {
+					args[i] = lispEval(token[i], dict);
+				}
+				TRACE("ARGS : " + args);
+				
+				if (funcToken[0] === "lambda") {
+					funcToken.shift(); // Remove 'lambda'
+					var funcParam = funcToken.shift();
+					var funcBody  = funcToken.shift();
+					TRACE ("Body>" + funcBody);
+					ans = lispEval(funcBody, makeDictTable(dict, funcParam, args));
+				} else {
+					TRACE ("Error : Not function");
+				}
+			} else {
+			    ans = token;
+			}
+			TRACE (ans);
             break;
     }
 
