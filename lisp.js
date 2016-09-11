@@ -9,6 +9,7 @@
  // 2016. 9. 2  : Add code to support simple lisp 
  // 2016. 9. 3  : Add code to support divide  
  // 2016. 9. 10 : Add code to support if
+ // 2016. 9. 11 : Add code to support lambda
  
 /*-----------------------------------------------*
  *  Global variables
@@ -22,8 +23,6 @@ var TOKEN_DIVIDE   = '/';
 var TOKEN_PLUS     = '+';
 var TOKEN_MINUS    = '-';
 var TOKEN_MULTI    = '*';
-var TOKEN_LBRACE   = '{';
-var TOKEN_RBRACE   = '}';
 var TOKEN_LPAREN   = '(';
 var TOKEN_RPAREN   = ')';
 var TOKEN_EQ       = '=';
@@ -80,16 +79,23 @@ function main(args) {
 }
 
 
+function copyObj(ob){
+    if (ob && typeof(ob) == "object") {
+        var t = new ob.constructor(); 
+        for(var key in ob) {
+            t[key] = copyObj(ob[key]);
+        }
+        return t;
+    }
+    return ob;
+}
+
 function makeDictTable(dict, funcParam, args){
-    TRACE ("makeDictTable");
-    var newDict = dict;
-	
-	//for( var i = 0; i < dict.length; i++) {
-    //   newDict[i] = dict[i];
-    //}
-	
+    TRACE ("makeDictTable funcP" + funcParam + " Args: " + args);
+    
+    var newDict = copyObj(dict);
+    
     for(var i = 0; i < funcParam.length; i++) {
-       TRACE (typeof(args[i]) + " : " + args[i]);
        newDict[ funcParam[i] ] = args[i];
     }
     TRACE (newDict);
@@ -109,13 +115,13 @@ function lispEval(token, dict) {
         return token;
     }
     
+    TRACE ("lispEval token[0] " + token[0]);
     switch(token[0]) {
         case TOKEN_PLUS:
         case TOKEN_MINUS:
         case TOKEN_MULTI:
         case TOKEN_DIVIDE:
             var opToken = token[0];
-            TRACE ("lispTOKEN_MULTI Eval : " + opToken);
             token.shift();
             ans = lispEval(token.shift(), dict);
             var nextToken = lispEval(token.shift(), dict);
@@ -134,7 +140,6 @@ function lispEval(token, dict) {
         case TOKEN_LE:
         {
             var opToken = token[0];
-            TRACE ("lispEval : <>=" + token[0]);
             token.shift();
             var leftToken  = lispEval(token.shift(), dict);
             var rightToken = lispEval(token.shift(), dict);
@@ -159,7 +164,6 @@ function lispEval(token, dict) {
             
         case "define":
         case "set!":
-            TRACE ("lispEval : DEFINE");
             token.shift();
             var nextToken = token.shift();
             dict[nextToken] = token.shift();
@@ -167,12 +171,10 @@ function lispEval(token, dict) {
             break;
             
         case "if":
-            TRACE("lispEval : if");
             token.shift();
             var bCondToken = lispEval(token.shift(), dict);
             var stConseqToken = token.shift();
             var stAlterToken = token.shift();
-            var ans;
             ans = (bCondToken) ? stConseqToken : stAlterToken; 
             TRACE (ans); 
             ans = lispEval(ans, dict);
@@ -181,27 +183,18 @@ function lispEval(token, dict) {
         default:
             TRACE ("Default");
             if ( typeof(token[0]) === "string") {
-				TRACE(token);
-                var funcToken = dict[token[0]];
-				//for( var i = 0; i < dict[token[0]].length; i++) {
-                //    funcToken[i] = dict[token[0]][i];
-                //}
-
-				TRACE ("dict " + dict);
-			    TRACE ("dict0 " + dict[token[0]]);
-				TRACE ("funcToken " + funcToken);
-				token.shift();
+                TRACE(token);
+                var funcToken = copyObj(dict[token[0]]);
+                token.shift();
                 var args = [];
                 for( var i = 0; i < token.length; i++) {
                     args[i] = lispEval(token[i], dict);
                 }
-                TRACE("ARGS : " + args);
                 
                 if (funcToken[0] === "lambda") {
                     funcToken.shift(); // Remove 'lambda'
                     var funcParam = funcToken.shift();
                     var funcBody  = funcToken.shift();
-                    TRACE ("Body>" + funcBody);
                     ans = lispEval(funcBody, makeDictTable(dict, funcParam, args));
                 } else {
                     TRACE ("Error : Not function");
