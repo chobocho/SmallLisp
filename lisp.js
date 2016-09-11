@@ -82,15 +82,26 @@ function main(args) {
 
 function makeDictTable(dict, funcParam, args){
     TRACE ("makeDictTable");
-    return dict;
+    var newDict = dict;
+	
+	//for( var i = 0; i < dict.length; i++) {
+    //   newDict[i] = dict[i];
+    //}
+	
+    for(var i = 0; i < funcParam.length; i++) {
+       TRACE (typeof(args[i]) + " : " + args[i]);
+       newDict[ funcParam[i] ] = args[i];
+    }
+    TRACE (newDict);
+    return newDict;
 }
 
 function lispEval(token, dict) {
-    TRACE ("lispEval > > " + token + " " + typeof(token));
+    TRACE ("lispEval >> " + token + " " + typeof(token));
     var ans = ""; 
     
     if (typeof(token) === "string") {
-		TRACE ("String " + dict[token]);
+        TRACE ("String " + dict[token]);
         return dict[token];
     }
 
@@ -147,7 +158,7 @@ function lispEval(token, dict) {
         break;
             
         case "define":
-		case "set!":
+        case "set!":
             TRACE ("lispEval : DEFINE");
             token.shift();
             var nextToken = token.shift();
@@ -155,18 +166,6 @@ function lispEval(token, dict) {
             ans = "";
             break;
             
-        case "lambda":
-            TRACE ("lispEval : LAMBDA");
-            token.shift();
-            var funcParam = token.shift();
-            var funcBody  = token.shift();
-            // 파라미터를 리스트에 추가하기 
-			// 단 파라미터 리스트가 복구 되어야 함
-			//  dict = UpdateDict(funcParam);
-            ans = doLambda(funcParam, funcBody, dict);
-			// 끝나면 파라미터 리스트가 복구 되어야함
-            break;
-        
         case "if":
             TRACE("lispEval : if");
             token.shift();
@@ -182,27 +181,35 @@ function lispEval(token, dict) {
         default:
             TRACE ("Default");
             if ( typeof(token[0]) === "string") {
-				var funcToken = dict[token[0]];
+				TRACE(token);
+                var funcToken = dict[token[0]];
+				//for( var i = 0; i < dict[token[0]].length; i++) {
+                //    funcToken[i] = dict[token[0]][i];
+                //}
+
+				TRACE ("dict " + dict);
+			    TRACE ("dict0 " + dict[token[0]]);
+				TRACE ("funcToken " + funcToken);
 				token.shift();
-				var args = new Array();
-				for( var i = 0; i < token.length; i++) {
-					args[i] = lispEval(token[i], dict);
-				}
-				TRACE("ARGS : " + args);
-				
-				if (funcToken[0] === "lambda") {
-					funcToken.shift(); // Remove 'lambda'
-					var funcParam = funcToken.shift();
-					var funcBody  = funcToken.shift();
-					TRACE ("Body>" + funcBody);
-					ans = lispEval(funcBody, makeDictTable(dict, funcParam, args));
-				} else {
-					TRACE ("Error : Not function");
-				}
-			} else {
-			    ans = token;
-			}
-			TRACE (ans);
+                var args = [];
+                for( var i = 0; i < token.length; i++) {
+                    args[i] = lispEval(token[i], dict);
+                }
+                TRACE("ARGS : " + args);
+                
+                if (funcToken[0] === "lambda") {
+                    funcToken.shift(); // Remove 'lambda'
+                    var funcParam = funcToken.shift();
+                    var funcBody  = funcToken.shift();
+                    TRACE ("Body>" + funcBody);
+                    ans = lispEval(funcBody, makeDictTable(dict, funcParam, args));
+                } else {
+                    TRACE ("Error : Not function");
+                }
+            } else {
+                ans = token;
+            }
+            TRACE (ans);
             break;
     }
 
