@@ -32,14 +32,6 @@ var TOKEN_GE       = '>=';
 var TOKEN_LE       = '<=';
 
 
-
-// Type of Error
-var SYNTAX            = 100;
-var UNBALANCED_PARENS = 101;
-var NOEXPRESSION      = 102;
-var DIVIDE_BY_ZERO    = 103;
- 
-
 // Type of End
 var ErrorMessage      = "";
 var IsOccuredError    = false;
@@ -246,10 +238,10 @@ function read_from_tokens(input, output) {
         case TOKEN_LPAREN:
             var list = [];
             while (input[0] != TOKEN_RPAREN) {
-                       read_from_tokens(input, list);
-                }
-                input.shift(); // Remove ')'
-                output.push(list);
+                read_from_tokens(input, list);
+            }
+            input.shift(); // Remove ')'
+            output.push(list);
             break;
                         
         case TOKEN_RPAREN:
