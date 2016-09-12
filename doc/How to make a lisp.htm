@@ -1,0 +1,355 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+
+<HEAD>
+<META NAME="Generator" CONTENT="Hancom HWP 9.6.1.3405">
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=euc-kr">
+<TITLE>Small Lisp 만들기</TITLE>
+<STYLE type="text/css">
+<!--
+p.HStyle0
+	{style-name:"바탕글"; margin-top:0.0pt; margin-bottom:0.0pt; text-align:justify; text-indent:0.0pt; line-height:160%; font-size:10.0pt; font-family:함초롬바탕; letter-spacing:0; font-weight:normal; font-style:normal; color:#000000;}
+li.HStyle0
+	{style-name:"바탕글"; margin-top:0.0pt; margin-bottom:0.0pt; text-align:justify; text-indent:0.0pt; line-height:160%; font-size:10.0pt; font-family:함초롬바탕; letter-spacing:0; font-weight:normal; font-style:normal; color:#000000;}
+div.HStyle0
+	{style-name:"바탕글"; margin-top:0.0pt; margin-bottom:0.0pt; text-align:justify; text-indent:0.0pt; line-height:160%; font-size:10.0pt; font-family:함초롬바탕; letter-spacing:0; font-weight:normal; font-style:normal; color:#000000;}
+p.HStyle1
+	{style-name:"본문"; margin-left:15.0pt; margin-top:0.0pt; margin-bottom:0.0pt; text-align:justify; text-indent:0.0pt; line-height:160%; font-size:10.0pt; font-family:함초롬바탕; letter-spacing:0; font-weight:normal; font-style:normal; color:#000000;}
+li.HStyle1
+	{style-name:"본문"; margin-left:15.0pt; margin-top:0.0pt; margin-bottom:0.0pt; text-align:justify; text-indent:0.0pt; line-height:160%; font-size:10.0pt; font-family:함초롬바탕; letter-spacing:0; font-weight:normal; font-style:normal; color:#000000;}
+div.HStyle1
+	{style-name:"본문"; margin-left:15.0pt; margin-top:0.0pt; margin-bottom:0.0pt; text-align:justify; text-indent:0.0pt; line-height:160%; font-size:10.0pt; font-family:함초롬바탕; letter-spacing:0; font-weight:normal; font-style:normal; color:#000000;}
+p.HStyle2
+	{style-name:"개요 1"; margin-left:10.0pt; margin-top:0.0pt; margin-bottom:0.0pt; text-align:justify; text-indent:0.0pt; line-height:160%; font-size:10.0pt; font-family:함초롬바탕; letter-spacing:0; font-weight:normal; font-style:normal; color:#000000;}
+li.HStyle2
+	{style-name:"개요 1"; margin-left:10.0pt; margin-top:0.0pt; margin-bottom:0.0pt; text-align:justify; text-indent:0.0pt; line-height:160%; font-size:10.0pt; font-family:함초롬바탕; letter-spacing:0; font-weight:normal; font-style:normal; color:#000000;}
+div.HStyle2
+	{style-name:"개요 1"; margin-left:10.0pt; margin-top:0.0pt; margin-bottom:0.0pt; text-align:justify; text-indent:0.0pt; line-height:160%; font-size:10.0pt; font-family:함초롬바탕; letter-spacing:0; font-weight:normal; font-style:normal; color:#000000;}
+p.HStyle3
+	{style-name:"개요 2"; margin-left:20.0pt; margin-top:0.0pt; margin-bottom:0.0pt; text-align:justify; text-indent:0.0pt; line-height:160%; font-size:10.0pt; font-family:함초롬바탕; letter-spacing:0; font-weight:normal; font-style:normal; color:#000000;}
+li.HStyle3
+	{style-name:"개요 2"; margin-left:20.0pt; margin-top:0.0pt; margin-bottom:0.0pt; text-align:justify; text-indent:0.0pt; line-height:160%; font-size:10.0pt; font-family:함초롬바탕; letter-spacing:0; font-weight:normal; font-style:normal; color:#000000;}
+div.HStyle3
+	{style-name:"개요 2"; margin-left:20.0pt; margin-top:0.0pt; margin-bottom:0.0pt; text-align:justify; text-indent:0.0pt; line-height:160%; font-size:10.0pt; font-family:함초롬바탕; letter-spacing:0; font-weight:normal; font-style:normal; color:#000000;}
+p.HStyle4
+	{style-name:"개요 3"; margin-left:30.0pt; margin-top:0.0pt; margin-bottom:0.0pt; text-align:justify; text-indent:0.0pt; line-height:160%; font-size:10.0pt; font-family:함초롬바탕; letter-spacing:0; font-weight:normal; font-style:normal; color:#000000;}
+li.HStyle4
+	{style-name:"개요 3"; margin-left:30.0pt; margin-top:0.0pt; margin-bottom:0.0pt; text-align:justify; text-indent:0.0pt; line-height:160%; font-size:10.0pt; font-family:함초롬바탕; letter-spacing:0; font-weight:normal; font-style:normal; color:#000000;}
+div.HStyle4
+	{style-name:"개요 3"; margin-left:30.0pt; margin-top:0.0pt; margin-bottom:0.0pt; text-align:justify; text-indent:0.0pt; line-height:160%; font-size:10.0pt; font-family:함초롬바탕; letter-spacing:0; font-weight:normal; font-style:normal; color:#000000;}
+p.HStyle5
+	{style-name:"개요 4"; margin-left:40.0pt; margin-top:0.0pt; margin-bottom:0.0pt; text-align:justify; text-indent:0.0pt; line-height:160%; font-size:10.0pt; font-family:함초롬바탕; letter-spacing:0; font-weight:normal; font-style:normal; color:#000000;}
+li.HStyle5
+	{style-name:"개요 4"; margin-left:40.0pt; margin-top:0.0pt; margin-bottom:0.0pt; text-align:justify; text-indent:0.0pt; line-height:160%; font-size:10.0pt; font-family:함초롬바탕; letter-spacing:0; font-weight:normal; font-style:normal; color:#000000;}
+div.HStyle5
+	{style-name:"개요 4"; margin-left:40.0pt; margin-top:0.0pt; margin-bottom:0.0pt; text-align:justify; text-indent:0.0pt; line-height:160%; font-size:10.0pt; font-family:함초롬바탕; letter-spacing:0; font-weight:normal; font-style:normal; color:#000000;}
+p.HStyle6
+	{style-name:"개요 5"; margin-left:50.0pt; margin-top:0.0pt; margin-bottom:0.0pt; text-align:justify; text-indent:0.0pt; line-height:160%; font-size:10.0pt; font-family:함초롬바탕; letter-spacing:0; font-weight:normal; font-style:normal; color:#000000;}
+li.HStyle6
+	{style-name:"개요 5"; margin-left:50.0pt; margin-top:0.0pt; margin-bottom:0.0pt; text-align:justify; text-indent:0.0pt; line-height:160%; font-size:10.0pt; font-family:함초롬바탕; letter-spacing:0; font-weight:normal; font-style:normal; color:#000000;}
+div.HStyle6
+	{style-name:"개요 5"; margin-left:50.0pt; margin-top:0.0pt; margin-bottom:0.0pt; text-align:justify; text-indent:0.0pt; line-height:160%; font-size:10.0pt; font-family:함초롬바탕; letter-spacing:0; font-weight:normal; font-style:normal; color:#000000;}
+p.HStyle7
+	{style-name:"개요 6"; margin-left:60.0pt; margin-top:0.0pt; margin-bottom:0.0pt; text-align:justify; text-indent:0.0pt; line-height:160%; font-size:10.0pt; font-family:함초롬바탕; letter-spacing:0; font-weight:normal; font-style:normal; color:#000000;}
+li.HStyle7
+	{style-name:"개요 6"; margin-left:60.0pt; margin-top:0.0pt; margin-bottom:0.0pt; text-align:justify; text-indent:0.0pt; line-height:160%; font-size:10.0pt; font-family:함초롬바탕; letter-spacing:0; font-weight:normal; font-style:normal; color:#000000;}
+div.HStyle7
+	{style-name:"개요 6"; margin-left:60.0pt; margin-top:0.0pt; margin-bottom:0.0pt; text-align:justify; text-indent:0.0pt; line-height:160%; font-size:10.0pt; font-family:함초롬바탕; letter-spacing:0; font-weight:normal; font-style:normal; color:#000000;}
+p.HStyle8
+	{style-name:"개요 7"; margin-left:70.0pt; margin-top:0.0pt; margin-bottom:0.0pt; text-align:justify; text-indent:0.0pt; line-height:160%; font-size:10.0pt; font-family:함초롬바탕; letter-spacing:0; font-weight:normal; font-style:normal; color:#000000;}
+li.HStyle8
+	{style-name:"개요 7"; margin-left:70.0pt; margin-top:0.0pt; margin-bottom:0.0pt; text-align:justify; text-indent:0.0pt; line-height:160%; font-size:10.0pt; font-family:함초롬바탕; letter-spacing:0; font-weight:normal; font-style:normal; color:#000000;}
+div.HStyle8
+	{style-name:"개요 7"; margin-left:70.0pt; margin-top:0.0pt; margin-bottom:0.0pt; text-align:justify; text-indent:0.0pt; line-height:160%; font-size:10.0pt; font-family:함초롬바탕; letter-spacing:0; font-weight:normal; font-style:normal; color:#000000;}
+p.HStyle9
+	{style-name:"쪽 번호"; margin-top:0.0pt; margin-bottom:0.0pt; text-align:justify; text-indent:0.0pt; line-height:160%; font-size:10.0pt; font-family:함초롬돋움; letter-spacing:0; font-weight:normal; font-style:normal; color:#000000;}
+li.HStyle9
+	{style-name:"쪽 번호"; margin-top:0.0pt; margin-bottom:0.0pt; text-align:justify; text-indent:0.0pt; line-height:160%; font-size:10.0pt; font-family:함초롬돋움; letter-spacing:0; font-weight:normal; font-style:normal; color:#000000;}
+div.HStyle9
+	{style-name:"쪽 번호"; margin-top:0.0pt; margin-bottom:0.0pt; text-align:justify; text-indent:0.0pt; line-height:160%; font-size:10.0pt; font-family:함초롬돋움; letter-spacing:0; font-weight:normal; font-style:normal; color:#000000;}
+p.HStyle10
+	{style-name:"머리말"; margin-top:0.0pt; margin-bottom:0.0pt; text-align:justify; text-indent:0.0pt; line-height:150%; font-size:9.0pt; font-family:함초롬돋움; letter-spacing:0; font-weight:normal; font-style:normal; color:#000000;}
+li.HStyle10
+	{style-name:"머리말"; margin-top:0.0pt; margin-bottom:0.0pt; text-align:justify; text-indent:0.0pt; line-height:150%; font-size:9.0pt; font-family:함초롬돋움; letter-spacing:0; font-weight:normal; font-style:normal; color:#000000;}
+div.HStyle10
+	{style-name:"머리말"; margin-top:0.0pt; margin-bottom:0.0pt; text-align:justify; text-indent:0.0pt; line-height:150%; font-size:9.0pt; font-family:함초롬돋움; letter-spacing:0; font-weight:normal; font-style:normal; color:#000000;}
+p.HStyle11
+	{style-name:"각주"; margin-left:13.1pt; margin-top:0.0pt; margin-bottom:0.0pt; text-align:justify; text-indent:-13.1pt; line-height:130%; font-size:9.0pt; font-family:함초롬바탕; letter-spacing:0; font-weight:normal; font-style:normal; color:#000000;}
+li.HStyle11
+	{style-name:"각주"; margin-left:13.1pt; margin-top:0.0pt; margin-bottom:0.0pt; text-align:justify; text-indent:-13.1pt; line-height:130%; font-size:9.0pt; font-family:함초롬바탕; letter-spacing:0; font-weight:normal; font-style:normal; color:#000000;}
+div.HStyle11
+	{style-name:"각주"; margin-left:13.1pt; margin-top:0.0pt; margin-bottom:0.0pt; text-align:justify; text-indent:-13.1pt; line-height:130%; font-size:9.0pt; font-family:함초롬바탕; letter-spacing:0; font-weight:normal; font-style:normal; color:#000000;}
+p.HStyle12
+	{style-name:"미주"; margin-left:13.1pt; margin-top:0.0pt; margin-bottom:0.0pt; text-align:justify; text-indent:-13.1pt; line-height:130%; font-size:9.0pt; font-family:함초롬바탕; letter-spacing:0; font-weight:normal; font-style:normal; color:#000000;}
+li.HStyle12
+	{style-name:"미주"; margin-left:13.1pt; margin-top:0.0pt; margin-bottom:0.0pt; text-align:justify; text-indent:-13.1pt; line-height:130%; font-size:9.0pt; font-family:함초롬바탕; letter-spacing:0; font-weight:normal; font-style:normal; color:#000000;}
+div.HStyle12
+	{style-name:"미주"; margin-left:13.1pt; margin-top:0.0pt; margin-bottom:0.0pt; text-align:justify; text-indent:-13.1pt; line-height:130%; font-size:9.0pt; font-family:함초롬바탕; letter-spacing:0; font-weight:normal; font-style:normal; color:#000000;}
+p.HStyle13
+	{style-name:"메모"; margin-top:0.0pt; margin-bottom:0.0pt; text-align:left; text-indent:0.0pt; line-height:130%; font-size:9.0pt; font-family:함초롬돋움; letter-spacing:-5%; font-weight:normal; font-style:normal; color:#000000;}
+li.HStyle13
+	{style-name:"메모"; margin-top:0.0pt; margin-bottom:0.0pt; text-align:left; text-indent:0.0pt; line-height:130%; font-size:9.0pt; font-family:함초롬돋움; letter-spacing:-5%; font-weight:normal; font-style:normal; color:#000000;}
+div.HStyle13
+	{style-name:"메모"; margin-top:0.0pt; margin-bottom:0.0pt; text-align:left; text-indent:0.0pt; line-height:130%; font-size:9.0pt; font-family:함초롬돋움; letter-spacing:-5%; font-weight:normal; font-style:normal; color:#000000;}
+p.HStyle14
+	{style-name:"차례 제목"; margin-top:12.0pt; margin-bottom:3.0pt; text-align:left; text-indent:0.0pt; line-height:160%; font-size:16.0pt; font-family:함초롬돋움; letter-spacing:0; font-weight:normal; font-style:normal; color:#2e74b5;}
+li.HStyle14
+	{style-name:"차례 제목"; margin-top:12.0pt; margin-bottom:3.0pt; text-align:left; text-indent:0.0pt; line-height:160%; font-size:16.0pt; font-family:함초롬돋움; letter-spacing:0; font-weight:normal; font-style:normal; color:#2e74b5;}
+div.HStyle14
+	{style-name:"차례 제목"; margin-top:12.0pt; margin-bottom:3.0pt; text-align:left; text-indent:0.0pt; line-height:160%; font-size:16.0pt; font-family:함초롬돋움; letter-spacing:0; font-weight:normal; font-style:normal; color:#2e74b5;}
+p.HStyle15
+	{style-name:"차례 1"; margin-top:0.0pt; margin-bottom:7.0pt; text-align:left; text-indent:0.0pt; line-height:160%; font-size:11.0pt; font-family:함초롬돋움; letter-spacing:0; font-weight:normal; font-style:normal; color:#000000;}
+li.HStyle15
+	{style-name:"차례 1"; margin-top:0.0pt; margin-bottom:7.0pt; text-align:left; text-indent:0.0pt; line-height:160%; font-size:11.0pt; font-family:함초롬돋움; letter-spacing:0; font-weight:normal; font-style:normal; color:#000000;}
+div.HStyle15
+	{style-name:"차례 1"; margin-top:0.0pt; margin-bottom:7.0pt; text-align:left; text-indent:0.0pt; line-height:160%; font-size:11.0pt; font-family:함초롬돋움; letter-spacing:0; font-weight:normal; font-style:normal; color:#000000;}
+p.HStyle16
+	{style-name:"차례 2"; margin-left:11.0pt; margin-top:0.0pt; margin-bottom:7.0pt; text-align:left; text-indent:0.0pt; line-height:160%; font-size:11.0pt; font-family:함초롬돋움; letter-spacing:0; font-weight:normal; font-style:normal; color:#000000;}
+li.HStyle16
+	{style-name:"차례 2"; margin-left:11.0pt; margin-top:0.0pt; margin-bottom:7.0pt; text-align:left; text-indent:0.0pt; line-height:160%; font-size:11.0pt; font-family:함초롬돋움; letter-spacing:0; font-weight:normal; font-style:normal; color:#000000;}
+div.HStyle16
+	{style-name:"차례 2"; margin-left:11.0pt; margin-top:0.0pt; margin-bottom:7.0pt; text-align:left; text-indent:0.0pt; line-height:160%; font-size:11.0pt; font-family:함초롬돋움; letter-spacing:0; font-weight:normal; font-style:normal; color:#000000;}
+p.HStyle17
+	{style-name:"차례 3"; margin-left:22.0pt; margin-top:0.0pt; margin-bottom:7.0pt; text-align:left; text-indent:0.0pt; line-height:160%; font-size:11.0pt; font-family:함초롬돋움; letter-spacing:0; font-weight:normal; font-style:normal; color:#000000;}
+li.HStyle17
+	{style-name:"차례 3"; margin-left:22.0pt; margin-top:0.0pt; margin-bottom:7.0pt; text-align:left; text-indent:0.0pt; line-height:160%; font-size:11.0pt; font-family:함초롬돋움; letter-spacing:0; font-weight:normal; font-style:normal; color:#000000;}
+div.HStyle17
+	{style-name:"차례 3"; margin-left:22.0pt; margin-top:0.0pt; margin-bottom:7.0pt; text-align:left; text-indent:0.0pt; line-height:160%; font-size:11.0pt; font-family:함초롬돋움; letter-spacing:0; font-weight:normal; font-style:normal; color:#000000;}
+-->
+</STYLE>
+</HEAD>
+
+<BODY>
+
+<P CLASS=HStyle0></P>
+<TABLE border="1" cellspacing="0" cellpadding="0" style='border-collapse:collapse;border:none;'>
+<TR>
+	<TD valign="middle" style='width:635px;height:3718px;border-left:solid #000000 0.4pt;border-right:solid #000000 0.4pt;border-top:solid #000000 0.4pt;border-bottom:solid #000000 0.4pt;padding:1.4pt 5.1pt 1.4pt 5.1pt'>
+	<P CLASS=HStyle0 STYLE='text-align:center;'><SPAN STYLE='font-size:24.0pt;line-height:160%'>Small Lisp 만들기</SPAN></P>
+	<P CLASS=HStyle0>&nbsp;</P>
+	<P CLASS=HStyle0>자바스크립트를 공부하면서 간단한 lisp interpreter를 만들어 보기로 하고, </P>
+	<P CLASS=HStyle0>구글링을 통해서 찾은 사이트 (‘<A HREF="http://norvig.com/lispy.html" TARGET="_self">http://norvig.com/lispy.html</A>’)를 참고하여서 만들어 보았다.</P>
+	<P CLASS=HStyle0>&nbsp;</P>
+	<P CLASS=HStyle0></P>
+<TABLE border="1" cellspacing="0" cellpadding="0" style='border-collapse:collapse;border:none;'>
+<TR>
+	<TD valign="middle" style='width:376px;height:38px;border-left:solid #000000 0.4pt;border-right:solid #000000 0.4pt;border-top:solid #000000 0.4pt;border-bottom:solid #000000 0.4pt;padding:1.4pt 5.1pt 1.4pt 5.1pt'>
+	<P CLASS=HStyle0 STYLE='text-align:center;'>Test : http://www.chobocho.com/javascript/lisp.html</P>
+	<P CLASS=HStyle0 STYLE='text-align:center;'>Source : https://github.com/chobocho/SmallLisp</P>
+	</TD>
+</TR>
+</TABLE>
+<P CLASS=HStyle0></P>
+	<P CLASS=HStyle0>&nbsp;</P>
+	<P CLASS=HStyle0><SPAN STYLE='font-size:14.0pt;line-height:160%'>1. 목 표</SPAN></P>
+	<P CLASS=HStyle0>&nbsp;</P>
+	<P CLASS=HStyle0>아래 코드를 실행 하여 결과를 출력</P>
+	<P CLASS=HStyle0></P>
+<TABLE border="1" cellspacing="0" cellpadding="0" style='border-collapse:collapse;border:none;'>
+<TR>
+	<TD valign="middle" style='width:408px;height:188px;border-left:solid #000000 0.4pt;border-right:solid #000000 0.4pt;border-top:solid #000000 0.4pt;border-bottom:solid #000000 0.4pt;padding:1.4pt 5.1pt 1.4pt 5.1pt'>
+	<P CLASS=HStyle0>(define pi 3)</P>
+	<P CLASS=HStyle0>(if (= pi 3) (+ 4 5) (* 4 5 ))</P>
+	<P CLASS=HStyle0>(define twice (lambda (x) (* 2 x)))</P>
+	<P CLASS=HStyle0>(twice 2)</P>
+	<P CLASS=HStyle0>(define forth (lambda (x) (* (twice x) (twice x))))</P>
+	<P CLASS=HStyle0>(forth 2)</P>
+	<P CLASS=HStyle0>(define fact (lambda (n) (if (&lt;= n 1) 1 (* n (fact (- n 1))))))</P>
+	<P CLASS=HStyle0>(fact 16)</P>
+	<P CLASS=HStyle0>(fact (forth 2))</P>
+	</TD>
+</TR>
+</TABLE>
+<P CLASS=HStyle0></P>
+	<P CLASS=HStyle0>&nbsp;&nbsp;</P>
+	<P CLASS=HStyle0>&nbsp;</P>
+	<P CLASS=HStyle0>2. lisp test를 위한 입력 폼용 html 제작</P>
+	<P CLASS=HStyle0></P>
+<TABLE border="1" cellspacing="0" cellpadding="0" style='border-collapse:collapse;border:none;'>
+<TR>
+	<TD valign="middle" style='width:624px;height:1331px;border-left:solid #000000 0.4pt;border-right:solid #000000 0.4pt;border-top:solid #000000 0.4pt;border-bottom:solid #000000 0.4pt;padding:1.4pt 5.1pt 1.4pt 5.1pt'>
+	<P CLASS=HStyle0>&lt;HTML&gt;</P>
+	<P CLASS=HStyle0>&lt;head&gt;</P>
+	<P CLASS=HStyle0>&lt;title&gt;Small lisp&lt;/title&gt;</P>
+	<P CLASS=HStyle0>&nbsp;</P>
+	<P CLASS=HStyle0>&lt;script language=&quot;JavaScript&quot; src=&quot;lisp.js&quot;&gt;&lt;/script&gt; </P>
+	<P CLASS=HStyle0>&nbsp;</P>
+	<P CLASS=HStyle0>&lt;script language=&quot;JavaScript&quot;&gt;</P>
+	<P CLASS=HStyle0>function Run(form) { </P>
+	<P CLASS=HStyle0><SPAN style='HWP-TAB:1;'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</SPAN>form.result_view.value = main(form.source_view.value); </P>
+	<P CLASS=HStyle0>}</P>
+	<P CLASS=HStyle0>&nbsp;</P>
+	<P CLASS=HStyle0>function ClearForm(form) { </P>
+	<P CLASS=HStyle0><SPAN style='HWP-TAB:1;'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</SPAN>form.result_view.value = &quot;&quot;;</P>
+	<P CLASS=HStyle0>&nbsp;&nbsp;&nbsp;&nbsp;form.source_view.value = &quot;&quot;;&nbsp;&nbsp;&nbsp; </P>
+	<P CLASS=HStyle0>}</P>
+	<P CLASS=HStyle0>&nbsp;</P>
+	<P CLASS=HStyle0>&lt;/script&gt;</P>
+	<P CLASS=HStyle0>&lt;/head&gt;</P>
+	<P CLASS=HStyle0>&lt;body&gt;</P>
+	<P CLASS=HStyle0>&nbsp;</P>
+	<P CLASS=HStyle0>&lt;!------------------------------------------------------------------</P>
+	<P CLASS=HStyle0>// 입력양식</P>
+	<P CLASS=HStyle0>-------------------------------------------------------------------&gt;</P>
+	<P CLASS=HStyle0>&lt;FORM name=source_code&gt;</P>
+	<P CLASS=HStyle0>&nbsp;&nbsp;&nbsp;&nbsp;&lt;TABLE cellSpacing=0 borderColorDark=white align=center borderColorLight=black border=1&gt;</P>
+	<P CLASS=HStyle0>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;TR&gt;</P>
+	<P CLASS=HStyle0>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;TD align=&quot;center&quot;&gt;</P>
+	<P CLASS=HStyle0>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[ Lisp source ]</P>
+	<P CLASS=HStyle0>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;/TD&gt;</P>
+	<P CLASS=HStyle0>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;TD align=&quot;center&quot;&gt;</P>
+	<P CLASS=HStyle0>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[ 결과 (Result) ]</P>
+	<P CLASS=HStyle0>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;/TD&gt;&nbsp;&nbsp;&nbsp; </P>
+	<P CLASS=HStyle0>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;/TR&gt;</P>
+	<P CLASS=HStyle0>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;TR&gt;</P>
+	<P CLASS=HStyle0>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;TD width=160 height=40&gt;</P>
+	<P CLASS=HStyle0>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;SPAN style=&quot;FONT-SIZE: 9pt&quot;&gt;&lt;TextArea name=&quot;source_view&quot; cols=&quot;50&quot; rows=&quot;20&quot;&gt;&lt;/textArea&gt; &lt;/SPAN&gt;</P>
+	<P CLASS=HStyle0>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;/TD&gt;</P>
+	<P CLASS=HStyle0>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;TD width=80 height=40&gt;</P>
+	<P CLASS=HStyle0>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;SPAN style=&quot;FONT-SIZE: 9pt&quot;&gt;&lt;TextArea name=&quot;result_view&quot; cols=&quot;20&quot; rows=&quot;20&quot;&gt;&lt;/textArea&gt; &lt;/SPAN&gt;</P>
+	<P CLASS=HStyle0>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;/TD&gt;</P>
+	<P CLASS=HStyle0>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;/TR&gt;</P>
+	<P CLASS=HStyle0>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;TR&gt;</P>
+	<P CLASS=HStyle0>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;TD align=&quot;center&quot; width=246 colSpan=2 height=25&gt;</P>
+	<P CLASS=HStyle0>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;SPAN style=&quot;FONT-SIZE: 9pt&quot;&gt;&lt;INPUT type=&quot;button&quot; value=&quot;Run&quot;, onClick=&quot;Run(this.form)&quot;&gt; &lt;/SPAN&gt;</P>
+	<P CLASS=HStyle0>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;SPAN style=&quot;FONT-SIZE: 9pt&quot;&gt;&lt;INPUT type=&quot;button&quot; value=&quot;Clear&quot;, onClick=&quot;ClearForm(this.form)&quot;&gt; &lt;/SPAN&gt;</P>
+	<P CLASS=HStyle0>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;/TD&gt;</P>
+	<P CLASS=HStyle0>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;/TR&gt;</P>
+	<P CLASS=HStyle0>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;TR&gt;</P>
+	<P CLASS=HStyle0>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;TD width=240 colSpan=2&gt;</P>
+	<P CLASS=HStyle0>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Example&lt;br&gt;</P>
+	<P CLASS=HStyle0>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(+ 1&nbsp; 2&nbsp; 3)&lt;br&gt;</P>
+	<P CLASS=HStyle0>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;/TD&gt;</P>
+	<P CLASS=HStyle0>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;/TR&gt;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </P>
+	<P CLASS=HStyle0>&nbsp;&nbsp;&nbsp;&nbsp;&lt;/TABLE&gt;</P>
+	<P CLASS=HStyle0>&nbsp;&lt;/FORM&gt;</P>
+	<P CLASS=HStyle0>&nbsp;</P>
+	<P CLASS=HStyle0>&lt;/body&gt; </P>
+	<P CLASS=HStyle0>&lt;/HTML&gt;</P>
+	</TD>
+</TR>
+</TABLE>
+<P CLASS=HStyle0></P>
+	<P CLASS=HStyle0>&nbsp;</P>
+	<P CLASS=HStyle0>&nbsp;</P>
+	<P CLASS=HStyle0><SPAN STYLE='font-size:14.0pt;line-height:160%'>3. Small Lisp 제작</SPAN></P>
+	<P CLASS=HStyle0>3.1 지원 할 명령어 리스트</P>
+	<P CLASS=HStyle0>Javascript 학습을 목적으로 만든 것이이서 최소한의 명령어만을 지원한다.</P>
+	<P CLASS=HStyle0></P>
+<TABLE border="1" cellspacing="0" cellpadding="0" style='border-collapse:collapse;border:none;'>
+<TR>
+	<TD valign="middle" style='width:574px;height:102px;border-left:solid #000000 0.4pt;border-right:solid #000000 0.4pt;border-top:solid #000000 0.4pt;border-bottom:solid #000000 0.4pt;padding:1.4pt 5.1pt 1.4pt 5.1pt'>
+	<P CLASS=HStyle0>1)　+, -. *, /</P>
+	<P CLASS=HStyle0>2) &lt;. &gt;. =. &lt;=. &gt;=</P>
+	<P CLASS=HStyle0>3) define, if</P>
+	<P CLASS=HStyle0>4) lambda (* <SPAN STYLE='font-weight:bold;color:#315f97'>쉬운 구현을 위하여 lambda의 인자로 lamdba 함수는 올 수 없도록 제한 함</SPAN>)</P>
+	</TD>
+</TR>
+</TABLE>
+<P CLASS=HStyle0></P>
+	<P CLASS=HStyle0>&nbsp;&nbsp;</P>
+	<P CLASS=HStyle0>3.2 제작 순서</P>
+	<P CLASS=HStyle0>1)　+, -. *, /</P>
+	<P CLASS=HStyle0>2)&nbsp; &lt;. &gt;. =. &lt;=. &gt;=</P>
+	<P CLASS=HStyle0>3) define, if</P>
+	<P CLASS=HStyle0>4) lambda</P>
+	<P CLASS=HStyle0>&nbsp;</P>
+	<P CLASS=HStyle0>3.3 사칙 연산 계산 ( +. -. *. / )</P>
+	<P CLASS=HStyle0>먼저 (+ 5 5)를 처리하는 코드를 만들어 보자.</P>
+	<P CLASS=HStyle0>먼저 (+ 5 5)를 파싱을 해주어야 한다. 이때, 파서를 따로 제작하지 않고, javascript string 객체에서 지원하는 메소드를 이용한다.</P>
+	<P CLASS=HStyle0>&nbsp;</P>
+	<P CLASS=HStyle0>3.3.1 space 기준으로 자르기 위하여, ( )를 ‘ ( ’ 와 ‘ ) ’ 로 앞뒤에 space를 붙여준다.</P>
+	<P CLASS=HStyle0>replace( /<SPAN STYLE='font-size:12.0pt;font-weight:bold;color:#315f97;line-height:160%'>\(</SPAN>/g, &quot;<SPAN STYLE='font-weight:bold;color:#315f97'> (</SPAN><SPAN STYLE='color:#315f97'> </SPAN>&quot; );</P>
+	<P CLASS=HStyle0>replace( /<SPAN STYLE='font-size:12.0pt;font-weight:bold;color:#315f97;line-height:160%'>\</SPAN><SPAN STYLE='font-weight:bold;color:#315f97'>)</SPAN>/g, &quot; <SPAN STYLE='font-size:12.0pt;font-weight:bold;color:#315f97;line-height:160%'>)</SPAN> &quot; );</P>
+	<P CLASS=HStyle0>그러나, 구문 제일 앞의 ‘ (’ 와 ‘) ’의 스페이스는 trim()을 이용해 제거를 해주어야 한다.</P>
+	<P CLASS=HStyle0>그렇지 않으면, 파싱된 Token에 “ ”가 구문의 제일 앞과 뒤에 추가 된다.</P>
+	<P CLASS=HStyle0>이걸 정리하면 아래와 같은 코드가 나오고, </P>
+	<P CLASS=HStyle0></P>
+<TABLE border="1" cellspacing="0" cellpadding="0" style='border-collapse:collapse;border:none;'>
+<TR>
+	<TD valign="middle" style='width:559px;height:81px;border-left:solid #000000 0.4pt;border-right:solid #000000 0.4pt;border-top:solid #000000 0.4pt;border-bottom:solid #000000 0.4pt;padding:1.4pt 5.1pt 1.4pt 5.1pt'>
+	<P CLASS=HStyle0>function main(args) {</P>
+	<P CLASS=HStyle0>&nbsp;&nbsp;&nbsp;&nbsp;//Tokenize</P>
+	<P CLASS=HStyle0>&nbsp;&nbsp;&nbsp;&nbsp;source_code = args.replace(/\(/g, &quot; ( &quot;).replace(/\)/g, &quot; ) &quot;).trim().split(/\s+/);</P>
+	<P CLASS=HStyle0>}</P>
+	</TD>
+</TR>
+</TABLE>
+<P CLASS=HStyle0></P>
+	<P CLASS=HStyle0>&nbsp;</P>
+	<P CLASS=HStyle0></P>
+<TABLE border="1" cellspacing="0" cellpadding="0" style='border-collapse:collapse;border:none;'>
+<TR>
+	<TD valign="middle" style='width:559px;height:38px;border-left:solid #000000 0.4pt;border-right:solid #000000 0.4pt;border-top:solid #000000 0.4pt;border-bottom:solid #000000 0.4pt;padding:1.4pt 5.1pt 1.4pt 5.1pt'>
+	<P CLASS=HStyle0>// 입력 (+ 3 5)</P>
+	<P CLASS=HStyle0>// source_code : (,+,3,5,)</P>
+	</TD>
+</TR>
+</TABLE>
+<P CLASS=HStyle0>이런 실행 결과를 얻을 수 있다.</P>
+	<P CLASS=HStyle0>&nbsp;</P>
+	<P CLASS=HStyle0>3.3.2 소스를 읽어서 ( ) 로 분리한다.</P>
+	<P CLASS=HStyle0></P>
+<TABLE border="1" cellspacing="0" cellpadding="0" style='border-collapse:collapse;border:none;'>
+<TR>
+	<TD valign="middle" style='width:559px;height:952px;border-left:solid #000000 0.4pt;border-right:solid #000000 0.4pt;border-top:solid #000000 0.4pt;border-bottom:solid #000000 0.4pt;padding:1.4pt 5.1pt 1.4pt 5.1pt'>
+	<P CLASS=HStyle0>// @input : 입력 토큰 리스트</P>
+	<P CLASS=HStyle0>// @output : ( )로 분리한 토큰 리스트 </P>
+	<P CLASS=HStyle0>function read_from_tokens(input, output) {</P>
+	<P CLASS=HStyle0>&nbsp;&nbsp;&nbsp;&nbsp;// 첫 번째 토큰을 꺼낸다.</P>
+	<P CLASS=HStyle0>&nbsp;&nbsp;&nbsp;&nbsp;token = input.shift();</P>
+	<P CLASS=HStyle0>&nbsp;</P>
+	<P CLASS=HStyle0>&nbsp;&nbsp;&nbsp;&nbsp;switch(token) {</P>
+	<P CLASS=HStyle0>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;case undefined:</P>
+	<P CLASS=HStyle0>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;output.pop();</P>
+	<P CLASS=HStyle0>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;break;</P>
+	<P CLASS=HStyle0>&nbsp;</P>
+	<P CLASS=HStyle0>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;case ‘(’:</P>
+	<P CLASS=HStyle0>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;// ‘(’ 와 ‘)’사이의 값을 까지 하나의 리스트에 저장한다.</P>
+	<P CLASS=HStyle0>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;//&nbsp; (+ 3 (+ 4 5)) 가 입력 된 경우 같이</P>
+	<P CLASS=HStyle0>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;// ‘(’ ‘)’ 가 나오는 경우를 위하여 재귀 호출을 사용한다.</P>
+	<P CLASS=HStyle0>&nbsp;&nbsp;</P>
+	<P CLASS=HStyle0>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;var list = [];</P>
+	<P CLASS=HStyle0>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;while ( input[0] != ‘)’ ) {</P>
+	<P CLASS=HStyle0>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;read_from_tokens(input, list);</P>
+	<P CLASS=HStyle0>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}</P>
+	<P CLASS=HStyle0>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;input.shift(); // Remove ')'</P>
+	<P CLASS=HStyle0>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;output.push(list);</P>
+	<P CLASS=HStyle0>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;break;</P>
+	<P CLASS=HStyle0>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</P>
+	<P CLASS=HStyle0>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;case ‘)’:</P>
+	<P CLASS=HStyle0>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;onError(&quot;Error : Start with ')'!&quot;);</P>
+	<P CLASS=HStyle0>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;break;</P>
+	<P CLASS=HStyle0>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</P>
+	<P CLASS=HStyle0>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;default:</P>
+	<P CLASS=HStyle0>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if ( isDigit(token.charAt(0)) ) {</P>
+	<P CLASS=HStyle0>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;TRACE (&quot;Digit &quot; + token);</P>
+	<P CLASS=HStyle0>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;output.push(parseInt(token));</P>
+	<P CLASS=HStyle0>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;} else {</P>
+	<P CLASS=HStyle0>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;output.push(token);</P>
+	<P CLASS=HStyle0>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}</P>
+	<P CLASS=HStyle0>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;break;</P>
+	<P CLASS=HStyle0>&nbsp;&nbsp;&nbsp;&nbsp;} </P>
+	<P CLASS=HStyle0>}</P>
+	<P CLASS=HStyle0>&nbsp;</P>
+	<P CLASS=HStyle0>function isDigit ( ch )</P>
+	<P CLASS=HStyle0>{</P>
+	<P CLASS=HStyle0>&nbsp;&nbsp;&nbsp;&nbsp;if (&quot;0123456789&quot;.indexOf(ch) != -1)</P>
+	<P CLASS=HStyle0>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return true;</P>
+	<P CLASS=HStyle0>&nbsp;&nbsp;&nbsp;&nbsp;return false;</P>
+	<P CLASS=HStyle0>}</P>
+	</TD>
+</TR>
+</TABLE>
+<P CLASS=HStyle0></P>
+	<P CLASS=HStyle0>&nbsp;</P>
+	</TD>
+</TR>
+</TABLE>
+<P CLASS=HStyle0></P>
+
+<P CLASS=HStyle0><BR></P>
+
+</BODY>
+
+</HTML>
