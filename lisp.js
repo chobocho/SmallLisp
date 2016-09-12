@@ -14,7 +14,6 @@
 /*-----------------------------------------------*
  *  Global variables
  *-----------------------------------------------*/
-var DEBUG_PRINT = false;  // Debug Mode Option
 var TRACE_PRINT = true;   // Trace Mode Option
  
  
@@ -270,21 +269,6 @@ function isDigit ( ch )
     if ("0123456789".indexOf(ch) != -1)
         return true;
     return false;
-}
-
-function PrintError (str)
-{
-    if (DEBUG_PRINT == true)
-    {
-        console.log(str);
-    }
-    else 
-    {
-        tempStr = document.source_code.result_view.value;
-        ErrorMessage = tempStr + "\n" + str;     
-    }
-    
-    IsOccuredError = true;    
 }
 
 function TRACE (str)
