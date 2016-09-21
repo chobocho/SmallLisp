@@ -115,13 +115,14 @@ javascript string 객체에서 지원하는 메소드를 이용한다.
 function main(args) {
     //Tokenize
     source_code = args.replace(/\(/g, " ( ").replace(/\)/g, " ) ").trim().split(/\s+/);
+    return source_code;
 }
 ```
 
 > 입력 (+ 3 5)  
 > source_code : (,+,3,5,)  
 
-이런 실행 결과를 얻을 수 있다.
+위와 같은 실행 결과를 얻을 수 있다.
 
 ###3.3.2 소스를 읽어서 ( ) 로 분리한다.
 ```
@@ -169,5 +170,11 @@ function isDigit ( ch )
     if ("0123456789".indexOf(ch) != -1)
         return true;
     return false;
+}
+
+function main(args) {
+    //Tokenize
+    source_code = args.replace(/\(/g, " ( ").replace(/\)/g, " ) ").trim().split(/\s+/);
+    return source_code;
 }
 ```
