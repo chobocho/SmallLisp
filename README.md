@@ -119,44 +119,50 @@ function main(args) {
 }
 ```
 
-> 입력 (+ 3 5)  
-> source_code : (,+,3,5,)  
-
-위와 같은 실행 결과를 얻을 수 있다.
+> list.html 에서 아래와 같이 입력시에 
+> ( + 1 2 3 )  
+> 아래와 같은 결과를 얻을 수 있다.  
+> (,+,1,2,3,)  
 
 ###3.3.2 소스를 읽어서 ( ) 로 분리한다.
 ```
-// @input : 입력 토큰 리스트
-// @output : ( )로 분리한 토큰 리스트 
-function read_from_tokens(input, output) {
-    // 첫 번째 토큰을 꺼낸다.
-    token = input.shift();
+function main(args) {
 
+    var Result = "";
+    
+    //Tokenize
+    source_code = args.replace(/\(/g, " ( ").replace(/\)/g, " ) ").trim().split(/\s+/);
+
+    tokens = [];
+    read_from_tokens(source_code, tokens);
+
+    return tokens;
+}
+
+
+function read_from_tokens(input, output) {
+    token = input.shift();
+                    
     switch(token) {
         case undefined:
             output.pop();
             break;
 
-        case ‘(’:
-            // ‘(’ 와 ‘)’사이의 값을 까지 하나의 리스트에 저장한다.
-            //  (+ 3 (+ 4 5)) 가 입력 된 경우 같이
-            // ‘(’ ‘)’ 가 나오는 경우를 위하여 재귀 호출을 사용한다.
-  
+        case '(':
             var list = [];
-            while ( input[0] != ‘)’ ) {
+            while (input[0] != ')') {
                 read_from_tokens(input, list);
             }
             input.shift(); // Remove ')'
             output.push(list);
             break;
                         
-        case ‘)’:
-            onError("Error : Start with ')'!");
+        case ')':
+           console.log("Error : Start with ')'!");
             break;
                 
         default:
-            if ( isDigit(token.charAt(0)) ) {
-                TRACE ("Digit " + token);
+            if ( isDigit(token.charAt(0))) {
                 output.push(parseInt(token));
             } else {
                 output.push(token);
@@ -172,9 +178,9 @@ function isDigit ( ch )
     return false;
 }
 
-function main(args) {
-    //Tokenize
-    source_code = args.replace(/\(/g, " ( ").replace(/\)/g, " ) ").trim().split(/\s+/);
-    return source_code;
-}
 ```
+
+> list.html 에서 아래와 같이 입력시에   
+> ( + 1 2 3 )  
+> 아래와 같은 결과를 얻을 수 있다.  
+> +,1,2,3
