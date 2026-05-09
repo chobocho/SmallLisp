@@ -1820,6 +1820,16 @@ function setupUI() {
     }
   }
 
+  // Track the last loaded snippet so we can keep the dropdown selection
+  // visible (so the user knows what's currently loaded) and clear it when
+  // they start editing something different.
+  let loadedKey = "";
+  function syncDropdownTo(key) {
+    loadedKey = key || "";
+    // Avoid spurious change events while we update programmatically.
+    snippetsSel.value = loadedKey;
+  }
+
   // Try restoring from IndexedDB autosave on load; fall back to default.
   (async () => {
     try {
@@ -1836,6 +1846,9 @@ function setupUI() {
       sourceEl.value = defaultCode;
     }
     await refreshSavedList();
+    // After saved snippets are populated, restore the dropdown to whatever
+    // the editor is currently showing so the user can see what's loaded.
+    if (docName) syncDropdownTo("sv:" + docName);
   })();
 
   // Debounced auto-save: persist editor contents and current docName.
@@ -1935,6 +1948,7 @@ function setupUI() {
     statusEl.textContent = "";
     statsEl.textContent = "";
     setDocName(null);
+    syncDropdownTo("");
     scheduleAutosave();
     sourceEl.focus();
   });
@@ -1943,6 +1957,7 @@ function setupUI() {
         !confirm("Reset the editor to the default snippet?")) return;
     sourceEl.value = defaultCode;
     setDocName(null);
+    syncDropdownTo("");
     scheduleAutosave();
   });
 
@@ -1956,7 +1971,10 @@ function setupUI() {
       if (ex) {
         sourceEl.value = ex.code;
         setDocName(null); // examples don't claim a save name
+        loadedKey = v;
         scheduleAutosave();
+        statusEl.textContent = "📚 loaded example '" + name + "'";
+        flashSaved();
       }
     } else if (v.startsWith("sv:")) {
       const name = v.slice(3);
@@ -1965,13 +1983,18 @@ function setupUI() {
         if (rec) {
           sourceEl.value = rec.code;
           setDocName(name);
+          loadedKey = v;
           scheduleAutosave();
+          statusEl.textContent = "💾 loaded saved '" + name + "'";
+          flashSaved();
         }
       } catch (e) {
         alert("Load failed: " + (e && e.message ? e.message : e));
       }
     }
-    snippetsSel.value = ""; // reset placeholder
+    // Keep the dropdown showing the chosen entry so the user can see
+    // what's loaded. It is reset back to the placeholder when the editor
+    // diverges (input/clear/reset/upload/delete) below.
   });
 
   // Save As: prompt for name, save to IndexedDB.
@@ -1992,6 +2015,7 @@ function setupUI() {
       docNameEl.classList.remove("dirty");
       flashSaved();
       await refreshSavedList();
+      syncDropdownTo("sv:" + trimmed);
     } catch (e) {
       alert("Save failed: " + (e && e.message ? e.message : e));
     }
@@ -2004,6 +2028,7 @@ function setupUI() {
     try {
       await dbDel(docName);
       setDocName(null);
+      syncDropdownTo("");
       await refreshSavedList();
     } catch (e) {
       alert("Delete failed: " + (e && e.message ? e.message : e));
@@ -2021,6 +2046,8 @@ function setupUI() {
       // Use the file's base name as the suggested doc name.
       const base = f.name.replace(/\.(lisp|scm|smalllisp|txt)$/i, "");
       setDocName(base || null);
+      syncDropdownTo("");
+      statusEl.textContent = "📤 opened '" + f.name + "'";
       scheduleAutosave();
     };
     reader.onerror = () => alert("Upload failed: " + reader.error);
@@ -2041,9 +2068,12 @@ function setupUI() {
     setTimeout(() => URL.revokeObjectURL(url), 0);
   });
 
-  // Mark dirty + autosave as the user types.
+  // Mark dirty + autosave as the user types. Once the editor diverges
+  // from whatever was loaded from the dropdown, blank the dropdown so
+  // we are not falsely advertising "this snippet is loaded".
   sourceEl.addEventListener("input", () => {
     if (sourceEl.value !== lastSaved) docNameEl.classList.add("dirty");
+    if (loadedKey) syncDropdownTo("");
     scheduleAutosave();
   });
 
