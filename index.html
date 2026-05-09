@@ -53,8 +53,16 @@
   .toolbar button:hover { background: #383b50; }
   .toolbar button.primary { background: var(--accent); color: #14161e; border-color: var(--accent); font-weight: 600; }
   .toolbar button.primary:hover { background: #93b7ff; }
+  .toolbar button.icon { padding: 6px 9px; }
+  .toolbar button:disabled { opacity: 0.4; cursor: not-allowed; }
+  .toolbar .sep { width: 1px; height: 18px; background: var(--border); margin: 0 2px; }
   .toolbar .spacer { flex: 1; }
   .toolbar .info { color: var(--muted); font-size: 12px; }
+  .toolbar .info input[type="checkbox"] { vertical-align: -2px; margin-right: 4px; }
+  .toolbar .docname { color: var(--accent2); font-size: 12px; font-weight: 500; }
+  .toolbar .docname.dirty::after { content: " ●"; color: var(--err); }
+  .toolbar .savestate { color: var(--ok); font-size: 11px; opacity: 0; transition: opacity 0.2s; }
+  .toolbar .savestate.show { opacity: 1; }
   main {
     flex: 1; display: grid; grid-template-columns: 1fr 1fr;
     gap: 1px; background: var(--border); min-height: 0;
@@ -92,15 +100,29 @@
 <body>
 <header>
   <h1><span class="accent">Small</span>Lisp</h1>
-  <span class="sub">Bytecode VM &middot; closures &middot; tail calls &middot; SimpleScheme grammar</span>
+  <span class="sub">✨ Bytecode VM &middot; closures &middot; tail calls &middot; auto-save &middot; SimpleScheme grammar</span>
 </header>
 <div class="toolbar">
-  <button id="run" class="primary" title="Ctrl+Enter">Run</button>
-  <button id="clear" title="Clear output">Clear Output</button>
-  <button id="reset" title="Reset source">Reset</button>
-  <select id="examples" title="Examples"></select>
-  <label class="info"><input type="checkbox" id="showBytecode" /> Show bytecode</label>
+  <button id="run" class="primary" title="Run (Ctrl+Enter)">▶️ Run</button>
+  <button id="clear" class="icon" title="Clear output">🧹</button>
+  <button id="reset" class="icon" title="Reset to default snippet">♻️</button>
+  <span class="sep"></span>
+  <select id="snippets" title="Pick an example or saved snippet">
+    <option value="" disabled selected>📂 Pick a snippet…</option>
+    <optgroup id="ex-group" label="📚 Examples"></optgroup>
+    <optgroup id="saved-group" label="💾 Saved"></optgroup>
+  </select>
+  <button id="saveAs" title="Save current source under a name (IndexedDB)">🏷️ Save</button>
+  <button id="deleteSaved" class="icon" title="Delete the selected saved snippet" disabled>🗑️</button>
+  <span class="sep"></span>
+  <button id="upload" title="Upload a file from your computer">📤 Open</button>
+  <button id="download" title="Download current source as a file">⬇️ Download</button>
+  <input type="file" id="fileInput" accept=".lisp,.scm,.txt,.smalllisp" style="display:none" />
+  <span class="sep"></span>
+  <label class="info" title="Show bytecode disassembly"><input type="checkbox" id="showBytecode" />🔬 BC</label>
   <span class="spacer"></span>
+  <span id="docName" class="docname">📄 untitled</span>
+  <span id="autosave" class="savestate">💾 saved</span>
   <span id="stats" class="info"></span>
 </div>
 <main>
@@ -1537,6 +1559,67 @@ function runSource(src, opts) {
   return { result, proto, globals };
 }
 
+/* ===================== Persistence (IndexedDB) =====================
+ * Object store: smalllisp.snippets keyed by `name`.
+ * Auto-save reuses a reserved key (`__autosave__`) so a fresh page load
+ * restores whatever was in the editor last time.
+ * ================================================================== */
+
+const DB_NAME = "smalllisp";
+const DB_STORE = "snippets";
+const DB_AUTO_KEY = "__autosave__";
+let _dbPromise = null;
+
+function db() {
+  if (_dbPromise) return _dbPromise;
+  _dbPromise = new Promise((resolve, reject) => {
+    if (typeof indexedDB === "undefined") { reject(new Error("IndexedDB not available")); return; }
+    const req = indexedDB.open(DB_NAME, 1);
+    req.onupgradeneeded = () => {
+      const d = req.result;
+      if (!d.objectStoreNames.contains(DB_STORE)) {
+        d.createObjectStore(DB_STORE, { keyPath: "name" });
+      }
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+  return _dbPromise;
+}
+
+function dbPut(name, code) {
+  return db().then(d => new Promise((resolve, reject) => {
+    const tx = d.transaction(DB_STORE, "readwrite");
+    tx.objectStore(DB_STORE).put({ name, code, updated: Date.now() });
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  }));
+}
+function dbGet(name) {
+  return db().then(d => new Promise((resolve, reject) => {
+    const tx = d.transaction(DB_STORE, "readonly");
+    const req = tx.objectStore(DB_STORE).get(name);
+    req.onsuccess = () => resolve(req.result || null);
+    req.onerror = () => reject(req.error);
+  }));
+}
+function dbList() {
+  return db().then(d => new Promise((resolve, reject) => {
+    const tx = d.transaction(DB_STORE, "readonly");
+    const req = tx.objectStore(DB_STORE).getAll();
+    req.onsuccess = () => resolve((req.result || []).filter(r => r.name !== DB_AUTO_KEY));
+    req.onerror = () => reject(req.error);
+  }));
+}
+function dbDel(name) {
+  return db().then(d => new Promise((resolve, reject) => {
+    const tx = d.transaction(DB_STORE, "readwrite");
+    tx.objectStore(DB_STORE).delete(name);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  }));
+}
+
 /* ===================== UI ===================== */
 
 const EXAMPLES = [
@@ -1641,27 +1724,107 @@ const EXAMPLES = [
 
 function setupUI() {
   const $ = (id) => document.getElementById(id);
-  const sourceEl  = $("source");
-  const outputEl  = $("output");
-  const statusEl  = $("status");
-  const statsEl   = $("stats");
-  const exSel     = $("examples");
-  const showBC    = $("showBytecode");
+  const sourceEl    = $("source");
+  const outputEl    = $("output");
+  const statusEl    = $("status");
+  const statsEl     = $("stats");
+  const snippetsSel = $("snippets");
+  const exGroup     = $("ex-group");
+  const savedGroup  = $("saved-group");
+  const showBC      = $("showBytecode");
+  const docNameEl   = $("docName");
+  const autosaveEl  = $("autosave");
+  const fileInput   = $("fileInput");
+  const deleteBtn   = $("deleteSaved");
 
+  // Populate examples dropdown.
   for (const ex of EXAMPLES) {
     const opt = document.createElement("option");
-    opt.value = ex.name;
+    opt.value = "ex:" + ex.name;
     opt.textContent = ex.name;
-    exSel.appendChild(opt);
+    exGroup.appendChild(opt);
   }
-  exSel.addEventListener("change", () => {
-    const ex = EXAMPLES.find(e => e.name === exSel.value);
-    if (ex) sourceEl.value = ex.code;
-  });
 
-  const initial = "; SmallLisp - bytecode VM Lisp\n; Pick an example above or write your own.\n\n" + EXAMPLES[1].code;
-  sourceEl.value = initial;
-  exSel.value = EXAMPLES[1].name;
+  const defaultCode = "; SmallLisp - bytecode VM Lisp\n; Pick an example above or write your own.\n\n" + EXAMPLES[1].code;
+  let docName = null;       // null = unsaved/untitled, otherwise key in IndexedDB
+  let lastSaved = "";       // last value persisted to autosave
+
+  function setDocName(name) {
+    docName = name;
+    docNameEl.textContent = name ? ("📄 " + name) : "📄 untitled";
+    deleteBtn.disabled = !name;
+  }
+
+  function flashSaved() {
+    autosaveEl.classList.add("show");
+    clearTimeout(flashSaved._t);
+    flashSaved._t = setTimeout(() => autosaveEl.classList.remove("show"), 1200);
+  }
+
+  async function refreshSavedList() {
+    let items = [];
+    try { items = await dbList(); } catch (_) { /* no IndexedDB */ }
+    items.sort((a, b) => (b.updated || 0) - (a.updated || 0));
+    savedGroup.innerHTML = "";
+    if (items.length === 0) {
+      const opt = document.createElement("option");
+      opt.value = ""; opt.disabled = true;
+      opt.textContent = "(no saved snippets)";
+      savedGroup.appendChild(opt);
+    } else {
+      for (const it of items) {
+        const opt = document.createElement("option");
+        opt.value = "sv:" + it.name;
+        opt.textContent = it.name;
+        savedGroup.appendChild(opt);
+      }
+    }
+  }
+
+  // Try restoring from IndexedDB autosave on load; fall back to default.
+  (async () => {
+    try {
+      const auto = await dbGet(DB_AUTO_KEY);
+      if (auto && typeof auto.code === "string" && auto.code.trim().length > 0) {
+        sourceEl.value = auto.code;
+        if (auto.docName) setDocName(auto.docName);
+        else setDocName(null);
+        lastSaved = auto.code;
+      } else {
+        sourceEl.value = defaultCode;
+      }
+    } catch (_) {
+      sourceEl.value = defaultCode;
+    }
+    await refreshSavedList();
+  })();
+
+  // Debounced auto-save: persist editor contents and current docName.
+  let saveTimer = null;
+  function scheduleAutosave() {
+    docNameEl.classList.add("dirty");
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(async () => {
+      const code = sourceEl.value;
+      try {
+        await dbPut(DB_AUTO_KEY, code);
+        // Also stamp the docName so reload knows what was open.
+        try {
+          const d = await db();
+          await new Promise((resolve, reject) => {
+            const tx = d.transaction(DB_STORE, "readwrite");
+            const store = tx.objectStore(DB_STORE);
+            store.put({ name: DB_AUTO_KEY, code, docName: docName || "", updated: Date.now() });
+            tx.oncomplete = () => resolve();
+            tx.onerror = () => reject(tx.error);
+          });
+        } catch (_) { /* ignore */ }
+        lastSaved = code;
+        docNameEl.classList.remove("dirty");
+        flashSaved();
+      } catch (_) { /* IndexedDB unavailable; ignore silently */ }
+    }, 500);
+  }
 
   function append(text, cls) {
     const span = document.createElement("span");
@@ -1703,9 +1866,8 @@ function setupUI() {
     const globals = newGlobals();
     const vm = new VM(globals);
     try {
-      // Compile and run each top-level expression separately so a partial
-      // failure still shows results from earlier expressions, and so the
-      // displayed result is the value of the last expression only.
+      // Run each top-level expression separately so a partial failure still
+      // shows earlier results, and so the displayed value is the last one.
       for (const expr of parsed) {
         const sub = compileTopLevel([expr]);
         const r = vm.run(sub);
@@ -1726,14 +1888,130 @@ function setupUI() {
 
   $("run").addEventListener("click", run);
   $("clear").addEventListener("click", clearOutput);
-  $("reset").addEventListener("click", () => { sourceEl.value = initial; });
+  $("reset").addEventListener("click", () => {
+    if (sourceEl.value && sourceEl.value !== defaultCode &&
+        !confirm("Reset the editor to the default snippet?")) return;
+    sourceEl.value = defaultCode;
+    setDocName(null);
+    scheduleAutosave();
+  });
+
+  // Snippets dropdown: examples (prefix "ex:") or saved (prefix "sv:")
+  snippetsSel.addEventListener("change", async () => {
+    const v = snippetsSel.value;
+    if (!v) return;
+    if (v.startsWith("ex:")) {
+      const name = v.slice(3);
+      const ex = EXAMPLES.find(e => e.name === name);
+      if (ex) {
+        sourceEl.value = ex.code;
+        setDocName(null); // examples don't claim a save name
+        scheduleAutosave();
+      }
+    } else if (v.startsWith("sv:")) {
+      const name = v.slice(3);
+      try {
+        const rec = await dbGet(name);
+        if (rec) {
+          sourceEl.value = rec.code;
+          setDocName(name);
+          scheduleAutosave();
+        }
+      } catch (e) {
+        alert("Load failed: " + (e && e.message ? e.message : e));
+      }
+    }
+    snippetsSel.value = ""; // reset placeholder
+  });
+
+  // Save As: prompt for name, save to IndexedDB.
+  $("saveAs").addEventListener("click", async () => {
+    const suggested = docName || "snippet-" + new Date().toISOString().slice(0, 10);
+    const name = prompt("🏷️ Save as (name):", suggested);
+    if (!name) return;
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    if (trimmed === DB_AUTO_KEY) { alert("That name is reserved."); return; }
+    try {
+      const existing = await dbGet(trimmed);
+      if (existing && trimmed !== docName &&
+          !confirm("'" + trimmed + "' already exists. Overwrite?")) return;
+      await dbPut(trimmed, sourceEl.value);
+      setDocName(trimmed);
+      lastSaved = sourceEl.value;
+      docNameEl.classList.remove("dirty");
+      flashSaved();
+      await refreshSavedList();
+    } catch (e) {
+      alert("Save failed: " + (e && e.message ? e.message : e));
+    }
+  });
+
+  // Delete the currently active saved snippet.
+  deleteBtn.addEventListener("click", async () => {
+    if (!docName) return;
+    if (!confirm("🗑️ Delete saved snippet '" + docName + "'?")) return;
+    try {
+      await dbDel(docName);
+      setDocName(null);
+      await refreshSavedList();
+    } catch (e) {
+      alert("Delete failed: " + (e && e.message ? e.message : e));
+    }
+  });
+
+  // Upload: open a local file into the editor.
+  $("upload").addEventListener("click", () => fileInput.click());
+  fileInput.addEventListener("change", () => {
+    const f = fileInput.files && fileInput.files[0];
+    if (!f) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      sourceEl.value = String(reader.result || "");
+      // Use the file's base name as the suggested doc name.
+      const base = f.name.replace(/\.(lisp|scm|smalllisp|txt)$/i, "");
+      setDocName(base || null);
+      scheduleAutosave();
+    };
+    reader.onerror = () => alert("Upload failed: " + reader.error);
+    reader.readAsText(f);
+    fileInput.value = ""; // allow re-uploading the same file
+  });
+
+  // Download: produce a .lisp file from the current source.
+  $("download").addEventListener("click", () => {
+    const blob = new Blob([sourceEl.value], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = (docName ? docName : "smalllisp-" + new Date().toISOString().slice(0, 10)) + ".lisp";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 0);
+  });
+
+  // Mark dirty + autosave as the user types.
+  sourceEl.addEventListener("input", () => {
+    if (sourceEl.value !== lastSaved) docNameEl.classList.add("dirty");
+    scheduleAutosave();
+  });
+
   sourceEl.addEventListener("keydown", (ev) => {
-    if (ev.key === "Enter" && (ev.ctrlKey || ev.metaKey)) { ev.preventDefault(); run(); }
-    // Tab inserts two spaces
+    if (ev.key === "Enter" && (ev.ctrlKey || ev.metaKey)) { ev.preventDefault(); run(); return; }
+    if (ev.key === "s"     && (ev.ctrlKey || ev.metaKey)) { ev.preventDefault(); $("saveAs").click(); return; }
     if (ev.key === "Tab") {
       ev.preventDefault();
       const s = sourceEl.selectionStart, e = sourceEl.selectionEnd;
       sourceEl.setRangeText("  ", s, e, "end");
+    }
+  });
+
+  // Flush pending autosave before unload so we never lose the last keystroke.
+  window.addEventListener("beforeunload", () => {
+    if (saveTimer) {
+      clearTimeout(saveTimer);
+      try { dbPut(DB_AUTO_KEY, sourceEl.value); } catch (_) {}
     }
   });
 }
