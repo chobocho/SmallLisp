@@ -1851,31 +1851,42 @@ function setupUI() {
     if (docName) syncDropdownTo("sv:" + docName);
   })();
 
-  // Debounced auto-save: persist editor contents and current docName.
+  // The autosave slot stores both the current code and the docName so a
+  // page reload can restore the editor exactly as the user left it (incl.
+  // showing "📄 abc" for a snippet that was loaded/saved as "abc").
+  //
+  // - persistAutosaveNow(): cancels any pending debounce and writes
+  //   immediately. Used by Save As / Delete / Load / Reset / Clear /
+  //   Upload so a quick reload always sees the latest docName.
+  // - scheduleAutosave(): debounced (500ms) variant for the typing path,
+  //   to avoid an IndexedDB write on every keystroke.
   let saveTimer = null;
+  async function persistAutosaveNow() {
+    clearTimeout(saveTimer);
+    saveTimer = null;
+    const code = sourceEl.value;
+    try {
+      const d = await db();
+      await new Promise((resolve, reject) => {
+        const tx = d.transaction(DB_STORE, "readwrite");
+        tx.objectStore(DB_STORE).put({
+          name: DB_AUTO_KEY,
+          code,
+          docName: docName || "",
+          updated: Date.now(),
+        });
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => reject(tx.error);
+      });
+      lastSaved = code;
+      docNameEl.classList.remove("dirty");
+      flashSaved();
+    } catch (_) { /* IndexedDB unavailable; ignore silently */ }
+  }
   function scheduleAutosave() {
     docNameEl.classList.add("dirty");
     clearTimeout(saveTimer);
-    saveTimer = setTimeout(async () => {
-      const code = sourceEl.value;
-      try {
-        await dbPut(DB_AUTO_KEY, code);
-        // Also stamp the docName so reload knows what was open.
-        try {
-          const d = await db();
-          await new Promise((resolve, reject) => {
-            const tx = d.transaction(DB_STORE, "readwrite");
-            const store = tx.objectStore(DB_STORE);
-            store.put({ name: DB_AUTO_KEY, code, docName: docName || "", updated: Date.now() });
-            tx.oncomplete = () => resolve();
-            tx.onerror = () => reject(tx.error);
-          });
-        } catch (_) { /* ignore */ }
-        lastSaved = code;
-        docNameEl.classList.remove("dirty");
-        flashSaved();
-      } catch (_) { /* IndexedDB unavailable; ignore silently */ }
-    }, 500);
+    saveTimer = setTimeout(persistAutosaveNow, 500);
   }
 
   function append(text, cls) {
@@ -1941,7 +1952,7 @@ function setupUI() {
   $("run").addEventListener("click", run);
   // 🧹 sweeps EVERYTHING: source, output, doc name. Confirm only if the
   // editor has unsaved content (so an empty editor stays a one-click op).
-  $("clear").addEventListener("click", () => {
+  $("clear").addEventListener("click", async () => {
     if (sourceEl.value.trim() && !confirm("🧹 Clear editor and output?")) return;
     sourceEl.value = "";
     clearOutput();
@@ -1949,16 +1960,16 @@ function setupUI() {
     statsEl.textContent = "";
     setDocName(null);
     syncDropdownTo("");
-    scheduleAutosave();
+    await persistAutosaveNow();
     sourceEl.focus();
   });
-  $("reset").addEventListener("click", () => {
+  $("reset").addEventListener("click", async () => {
     if (sourceEl.value && sourceEl.value !== defaultCode &&
         !confirm("Reset the editor to the default snippet?")) return;
     sourceEl.value = defaultCode;
     setDocName(null);
     syncDropdownTo("");
-    scheduleAutosave();
+    await persistAutosaveNow();
   });
 
   // Snippets dropdown: examples (prefix "ex:") or saved (prefix "sv:")
@@ -1972,9 +1983,8 @@ function setupUI() {
         sourceEl.value = ex.code;
         setDocName(null); // examples don't claim a save name
         loadedKey = v;
-        scheduleAutosave();
         statusEl.textContent = "📚 loaded example '" + name + "'";
-        flashSaved();
+        await persistAutosaveNow();
       }
     } else if (v.startsWith("sv:")) {
       const name = v.slice(3);
@@ -1984,9 +1994,8 @@ function setupUI() {
           sourceEl.value = rec.code;
           setDocName(name);
           loadedKey = v;
-          scheduleAutosave();
           statusEl.textContent = "💾 loaded saved '" + name + "'";
-          flashSaved();
+          await persistAutosaveNow();
         }
       } catch (e) {
         alert("Load failed: " + (e && e.message ? e.message : e));
@@ -2011,11 +2020,11 @@ function setupUI() {
           !confirm("'" + trimmed + "' already exists. Overwrite?")) return;
       await dbPut(trimmed, sourceEl.value);
       setDocName(trimmed);
-      lastSaved = sourceEl.value;
-      docNameEl.classList.remove("dirty");
-      flashSaved();
       await refreshSavedList();
       syncDropdownTo("sv:" + trimmed);
+      // Stamp the autosave slot with the new docName so a reload restores
+      // "📄 <name>" instead of "📄 untitled".
+      await persistAutosaveNow();
     } catch (e) {
       alert("Save failed: " + (e && e.message ? e.message : e));
     }
@@ -2030,6 +2039,8 @@ function setupUI() {
       setDocName(null);
       syncDropdownTo("");
       await refreshSavedList();
+      // Clear the now-stale docName from the autosave slot.
+      await persistAutosaveNow();
     } catch (e) {
       alert("Delete failed: " + (e && e.message ? e.message : e));
     }
@@ -2041,14 +2052,14 @@ function setupUI() {
     const f = fileInput.files && fileInput.files[0];
     if (!f) return;
     const reader = new FileReader();
-    reader.onload = () => {
+    reader.onload = async () => {
       sourceEl.value = String(reader.result || "");
       // Use the file's base name as the suggested doc name.
       const base = f.name.replace(/\.(lisp|scm|smalllisp|txt)$/i, "");
       setDocName(base || null);
       syncDropdownTo("");
       statusEl.textContent = "📤 opened '" + f.name + "'";
-      scheduleAutosave();
+      await persistAutosaveNow();
     };
     reader.onerror = () => alert("Upload failed: " + reader.error);
     reader.readAsText(f);
