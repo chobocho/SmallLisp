@@ -113,6 +113,33 @@
     padding: 8px 20px; border-top: 1px solid var(--border);
     color: var(--muted); font-size: 11px; display: flex; justify-content: space-between;
   }
+  /* Autocomplete popup */
+  .completion {
+    position: absolute;
+    z-index: 100;
+    background: var(--panel2);
+    color: var(--fg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+    font-family: var(--mono);
+    font-size: 13px;
+    line-height: 1.4;
+    min-width: 180px;
+    max-height: 220px;
+    overflow-y: auto;
+    padding: 4px 0;
+  }
+  .completion[hidden] { display: none; }
+  .completion .item {
+    padding: 3px 12px;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .completion .item.selected,
+  .completion .item:hover { background: var(--accent); color: var(--primary-fg); }
+  .completion .item .hint { color: var(--muted); margin-left: 8px; font-size: 11px; }
+  .completion .item.selected .hint { color: var(--primary-fg); opacity: 0.85; }
   @media (max-width: 800px) { main { grid-template-columns: 1fr; grid-template-rows: 1fr 1fr; } }
 </style>
 </head>
@@ -165,6 +192,7 @@
   <span>SmallLisp &mdash; single-file TypeScript-style Lisp with bytecode VM. No external dependencies.</span>
   <span><a href="https://github.com/chobocho/smalllisp" style="color: var(--muted)">chobocho/smalllisp</a></span>
 </footer>
+<div id="completion" class="completion" hidden role="listbox" aria-label="Autocomplete suggestions"></div>
 
 <script>
 "use strict";
@@ -2079,24 +2107,263 @@ function setupUI() {
     setTimeout(() => URL.revokeObjectURL(url), 0);
   });
 
+  // ===== Autocomplete & smart parens =================================
+  // Identifiers callable in SmallLisp. The popup shows entries whose
+  // prefix matches what the user just typed. (Special forms are listed
+  // first so common ones surface to the top.)
+  const KEYWORDS = [
+    // Special forms
+    { word: "quote",    kind: "form" },
+    { word: "if",       kind: "form" },
+    { word: "define",   kind: "form" },
+    { word: "set!",     kind: "form" },
+    { word: "lambda",   kind: "form" },
+    { word: "begin",    kind: "form" },
+    { word: "let",      kind: "form" },
+    { word: "let*",     kind: "form" },
+    { word: "and",      kind: "form" },
+    { word: "or",       kind: "form" },
+    { word: "cond",     kind: "form" },
+    { word: "when",     kind: "form" },
+    { word: "unless",   kind: "form" },
+    { word: "else",     kind: "form" },
+    // Predicates
+    { word: "not",        kind: "fn" },
+    { word: "zero?",      kind: "fn" },
+    { word: "null?",      kind: "fn" },
+    { word: "pair?",      kind: "fn" },
+    { word: "list?",      kind: "fn" },
+    { word: "number?",    kind: "fn" },
+    { word: "integer?",   kind: "fn" },
+    { word: "string?",    kind: "fn" },
+    { word: "symbol?",    kind: "fn" },
+    { word: "boolean?",   kind: "fn" },
+    { word: "procedure?", kind: "fn" },
+    // Lists
+    { word: "car", kind: "fn" }, { word: "cdr", kind: "fn" },
+    { word: "cons", kind: "fn" }, { word: "list", kind: "fn" },
+    { word: "length", kind: "fn" }, { word: "reverse", kind: "fn" },
+    { word: "append", kind: "fn" },
+    // Higher order
+    { word: "map", kind: "fn" }, { word: "filter", kind: "fn" },
+    { word: "foldl", kind: "fn" }, { word: "for-each", kind: "fn" },
+    { word: "apply", kind: "fn" },
+    // Equality
+    { word: "eq?", kind: "fn" }, { word: "equal?", kind: "fn" },
+    // I/O
+    { word: "display", kind: "fn" }, { word: "write", kind: "fn" },
+    { word: "newline", kind: "fn" }, { word: "print", kind: "fn" },
+    // Strings
+    { word: "string-length", kind: "fn" }, { word: "string-append", kind: "fn" },
+    { word: "string-split", kind: "fn" }, { word: "string-join", kind: "fn" },
+    { word: "string-contains?", kind: "fn" }, { word: "string-replace", kind: "fn" },
+    { word: "substring", kind: "fn" },
+    // Conversion
+    { word: "number->string", kind: "fn" }, { word: "string->number", kind: "fn" },
+    { word: "symbol->string", kind: "fn" }, { word: "string->symbol", kind: "fn" },
+    // Math
+    { word: "min", kind: "fn" }, { word: "max", kind: "fn" },
+    { word: "abs", kind: "fn" }, { word: "expt", kind: "fn" },
+    { word: "sqrt", kind: "fn" }, { word: "floor", kind: "fn" },
+    { word: "ceiling", kind: "fn" }, { word: "round", kind: "fn" },
+    { word: "exact->inexact", kind: "fn" }, { word: "inexact->exact", kind: "fn" },
+    { word: "modulo", kind: "fn" },
+    // Boolean literals
+    { word: "#t", kind: "lit" }, { word: "#f", kind: "lit" },
+  ];
+  const IDENT_CHAR = /[A-Za-z0-9?!*+\-/<>=#]/;
+
+  const popup = $("completion");
+  let comp = null; // { matches, selected, wordStart, wordEnd }
+
+  // Pixel position of the textarea caret. Uses the standard mirror-div
+  // trick: an off-screen <div> with the same typography as the textarea
+  // is filled with text up to the caret; we read the ending span's rect.
+  function caretCoords() {
+    const div = document.createElement("div");
+    const cs = getComputedStyle(sourceEl);
+    const props = ["fontFamily","fontSize","fontWeight","letterSpacing",
+      "wordSpacing","textTransform","lineHeight","padding","border","boxSizing","tabSize"];
+    for (const p of props) div.style[p] = cs[p];
+    div.style.position = "absolute";
+    div.style.visibility = "hidden";
+    div.style.whiteSpace = "pre-wrap";
+    div.style.wordWrap = "break-word";
+    div.style.overflow = "hidden";
+    div.style.width = sourceEl.clientWidth + "px";
+    div.style.height = "auto";
+    const before = sourceEl.value.substring(0, sourceEl.selectionStart);
+    div.textContent = before;
+    const marker = document.createElement("span");
+    marker.textContent = "​";
+    div.appendChild(marker);
+    document.body.appendChild(div);
+    const taR = sourceEl.getBoundingClientRect();
+    const dR  = div.getBoundingClientRect();
+    const mR  = marker.getBoundingClientRect();
+    const top  = taR.top  + (mR.top  - dR.top)  - sourceEl.scrollTop  + window.scrollY;
+    const left = taR.left + (mR.left - dR.left) - sourceEl.scrollLeft + window.scrollX;
+    document.body.removeChild(div);
+    return { top, left, lineHeight: parseFloat(cs.lineHeight) || 18 };
+  }
+
+  function hideCompletion() { comp = null; popup.hidden = true; }
+
+  function renderCompletion() {
+    if (!comp) return;
+    popup.innerHTML = "";
+    comp.matches.forEach((m, i) => {
+      const li = document.createElement("div");
+      li.className = "item" + (i === comp.selected ? " selected" : "");
+      li.role = "option";
+      const wText = document.createElement("span");
+      wText.textContent = m.word;
+      li.appendChild(wText);
+      const hint = document.createElement("span");
+      hint.className = "hint";
+      hint.textContent = m.kind;
+      li.appendChild(hint);
+      li.addEventListener("mousedown", (ev) => { ev.preventDefault(); acceptCompletion(i); });
+      popup.appendChild(li);
+    });
+    const c = caretCoords();
+    // Position just below the line with the caret. Clamp so the popup
+    // does not sail off-screen on the right edge.
+    const top = c.top + c.lineHeight + 2;
+    let left = c.left;
+    const maxLeft = window.innerWidth - 200;
+    if (left > maxLeft) left = Math.max(8, maxLeft);
+    popup.style.top = top + "px";
+    popup.style.left = left + "px";
+    popup.hidden = false;
+    // Make sure the selected row is visible.
+    const sel = popup.querySelector(".item.selected");
+    if (sel) sel.scrollIntoView({ block: "nearest" });
+  }
+
+  // Find the identifier the caret is currently inside (or null if the
+  // caret is not in a word, e.g. after whitespace or punctuation).
+  function currentWordRange() {
+    const s = sourceEl.selectionStart;
+    if (s !== sourceEl.selectionEnd) return null;
+    const v = sourceEl.value;
+    let i = s;
+    while (i > 0 && IDENT_CHAR.test(v[i - 1])) i--;
+    if (i === s) return null;
+    return { start: i, end: s, text: v.substring(i, s) };
+  }
+
+  function maybeShowCompletion() {
+    const w = currentWordRange();
+    if (!w) return hideCompletion();
+    const lower = w.text.toLowerCase();
+    // Match: starts with the typed prefix; place exact-prefix matches first.
+    const matches = KEYWORDS
+      .filter(k => k.word.toLowerCase().startsWith(lower) && k.word !== w.text)
+      .slice(0, 12);
+    if (matches.length === 0) return hideCompletion();
+    comp = { matches, selected: 0, wordStart: w.start, wordEnd: w.end };
+    renderCompletion();
+  }
+
+  function acceptCompletion(idx) {
+    if (!comp) return;
+    const choice = comp.matches[idx].word;
+    const { wordStart, wordEnd } = comp;
+    sourceEl.setRangeText(choice, wordStart, wordEnd, "end");
+    hideCompletion();
+    sourceEl.dispatchEvent(new Event("input"));
+  }
+
+  // Smart paren / quote / bracket: type the open one, get the close one
+  // for free with the cursor between them.
+  const PAIRS = { "(": ")", "[": "]", "\"": "\"" };
+  function smartPair(ev) {
+    const open = ev.key;
+    if (!Object.prototype.hasOwnProperty.call(PAIRS, open)) return false;
+    const close = PAIRS[open];
+    const s = sourceEl.selectionStart, e = sourceEl.selectionEnd;
+    const v = sourceEl.value;
+    ev.preventDefault();
+    if (s !== e) {
+      // Wrap selection.
+      const inner = v.slice(s, e);
+      sourceEl.setRangeText(open + inner + close, s, e, "end");
+      sourceEl.selectionStart = s + 1;
+      sourceEl.selectionEnd = s + 1 + inner.length;
+    } else {
+      sourceEl.setRangeText(open + close, s, e, "end");
+      sourceEl.selectionStart = sourceEl.selectionEnd = s + 1;
+    }
+    sourceEl.dispatchEvent(new Event("input"));
+    return true;
+  }
+  function smartSkip(ev) {
+    // If the user types a closer that already sits at the caret, just
+    // step over it instead of duplicating.
+    const close = ev.key;
+    if (close !== ")" && close !== "]" && close !== "\"") return false;
+    const s = sourceEl.selectionStart, e = sourceEl.selectionEnd;
+    if (s !== e) return false;
+    if (sourceEl.value[s] !== close) return false;
+    ev.preventDefault();
+    sourceEl.selectionStart = sourceEl.selectionEnd = s + 1;
+    return true;
+  }
+  function smartBackspace(ev) {
+    if (ev.key !== "Backspace") return false;
+    const s = sourceEl.selectionStart, e = sourceEl.selectionEnd;
+    if (s !== e) return false;
+    const before = sourceEl.value[s - 1], after = sourceEl.value[s];
+    if (PAIRS[before] && PAIRS[before] === after) {
+      ev.preventDefault();
+      sourceEl.setRangeText("", s - 1, s + 1, "end");
+      sourceEl.dispatchEvent(new Event("input"));
+      return true;
+    }
+    return false;
+  }
+
   // Mark dirty + autosave as the user types. Once the editor diverges
   // from whatever was loaded from the dropdown, blank the dropdown so
-  // we are not falsely advertising "this snippet is loaded".
+  // we are not falsely advertising "this snippet is loaded". Also drive
+  // the autocomplete popup off the same event.
   sourceEl.addEventListener("input", () => {
     if (sourceEl.value !== lastSaved) docNameEl.classList.add("dirty");
     if (loadedKey) syncDropdownTo("");
     scheduleAutosave();
+    maybeShowCompletion();
   });
 
   sourceEl.addEventListener("keydown", (ev) => {
+    // Popup-aware navigation comes first, so Tab/Enter/Esc/Up/Down hit
+    // the popup before falling through to "run" or tab-indent.
+    if (comp && !ev.ctrlKey && !ev.metaKey && !ev.altKey) {
+      if (ev.key === "ArrowDown") { ev.preventDefault(); comp.selected = (comp.selected + 1) % comp.matches.length; renderCompletion(); return; }
+      if (ev.key === "ArrowUp")   { ev.preventDefault(); comp.selected = (comp.selected - 1 + comp.matches.length) % comp.matches.length; renderCompletion(); return; }
+      if (ev.key === "Enter" || ev.key === "Tab") { ev.preventDefault(); acceptCompletion(comp.selected); return; }
+      if (ev.key === "Escape")    { ev.preventDefault(); hideCompletion(); return; }
+    }
     if (ev.key === "Enter" && (ev.ctrlKey || ev.metaKey)) { ev.preventDefault(); run(); return; }
     if (ev.key === "s"     && (ev.ctrlKey || ev.metaKey)) { ev.preventDefault(); $("saveAs").click(); return; }
+    // Smart pairs. These also fire the input event so autocomplete and
+    // autosave still see the change.
+    if (smartBackspace(ev)) return;
+    if (smartSkip(ev)) return;
+    if (smartPair(ev)) return;
     if (ev.key === "Tab") {
       ev.preventDefault();
       const s = sourceEl.selectionStart, e = sourceEl.selectionEnd;
       sourceEl.setRangeText("  ", s, e, "end");
     }
   });
+
+  sourceEl.addEventListener("blur", () => {
+    // Allow a click on the popup to fire first.
+    setTimeout(hideCompletion, 120);
+  });
+  sourceEl.addEventListener("scroll", () => { if (comp) renderCompletion(); });
+  window.addEventListener("resize",   () => { if (comp) renderCompletion(); });
 
   // Flush pending autosave before unload so we never lose the last keystroke.
   window.addEventListener("beforeunload", () => {
