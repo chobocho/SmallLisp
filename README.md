@@ -2,7 +2,7 @@
 
 브라우저 안에서 동작하는 작은 Lisp 인터프리터입니다. SimpleScheme의 VM/문법을 참고하여 **bytecode VM**으로 다시 작성했고, 외부 의존성 없이 단일 `index.html` 한 파일로 동작합니다.
 
-🔗 데모: <http://www.chobocho.com/javascript/lisp.html>
+🔗 데모: <http://www.chobocho.com/javascript/index.html>
 
 ## 빠른 시작
 
@@ -18,8 +18,8 @@ start index.html       # Windows
 또는 가벼운 정적 서버:
 
 ```sh
-python3 -m http.server 8000
-# → http://localhost:8000
+python3 -m http.server 8001
+# → http://localhost:8001
 ```
 
 ## 화면 구성
